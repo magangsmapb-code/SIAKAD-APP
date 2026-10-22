@@ -584,7 +584,7 @@ export function DeveloperDashboardView() {
           {/* Table Container */}
           <Card>
             <CardHeader className="pb-3 border-b border-border">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                 <div>
                   <CardTitle className="text-base font-bold text-foreground">
                     Registri Kontrol Fitur &amp; Governance
@@ -593,14 +593,111 @@ export function DeveloperDashboardView() {
                     Setiap perubahan status disimpan langsung ke backend PostgreSQL dan dicatat di tabel audit_logs.
                   </CardDescription>
                 </div>
-                <Badge variant="outline" className="text-xs">
+                <Badge variant="outline" className="text-xs w-fit">
                   {filteredFeatures.length} Ditampilkan
                 </Badge>
               </div>
             </CardHeader>
 
             <CardContent className="p-0">
-              <div className="overflow-x-auto">
+              {/* Mobile Card List View (Block on < md) */}
+              <div className="block md:hidden divide-y divide-border/60">
+                {filteredFeatures.map((f) => (
+                  <div key={f.key} className="p-4 space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="space-y-0.5">
+                        <span className="font-bold text-sm text-foreground">{f.name}</span>
+                        <p className="text-xs text-muted-foreground line-clamp-2">
+                          {f.description}
+                        </p>
+                      </div>
+                      {f.implementationStatus === "IMPLEMENTED" ? (
+                        <Badge variant="hadir" className="text-[10px] shrink-0">
+                          Selesai
+                        </Badge>
+                      ) : f.implementationStatus === "IN_PROGRESS" ? (
+                        <Badge variant="terlambat" className="text-[10px] shrink-0">
+                          Pengerjaan
+                        </Badge>
+                      ) : (
+                        <Badge variant="alpa" className="text-[10px] shrink-0">
+                          Belum Dibuat
+                        </Badge>
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-1.5 text-[10px]">
+                      <Badge variant="outline" className="font-mono py-0">
+                        {f.key}
+                      </Badge>
+                      <Badge variant="secondary" className="py-0">
+                        {f.category}
+                      </Badge>
+                      <span className="font-mono text-primary font-medium">
+                        {f.route}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-1">
+                      <Button
+                        size="sm"
+                        variant={f.isEnabled ? "default" : "outline"}
+                        className={`flex-1 h-11 min-h-[44px] text-xs gap-1.5 font-semibold touch-target ${
+                          f.isEnabled
+                            ? "bg-emerald-700 hover:bg-emerald-800 text-white"
+                            : "text-muted-foreground"
+                        }`}
+                        onClick={() => handleRequestToggleEnable(f)}
+                      >
+                        {f.isEnabled ? (
+                          <>
+                            <CheckCircle2 className="h-4 w-4" />
+                            <span>Status: Aktif</span>
+                          </>
+                        ) : (
+                          <>
+                            <XCircle className="h-4 w-4" />
+                            <span>Status: Nonaktif</span>
+                          </>
+                        )}
+                      </Button>
+
+                      <Button
+                        size="sm"
+                        variant={f.maintenanceStatus === "MAINTENANCE" ? "destructive" : "outline"}
+                        className={`flex-1 h-11 min-h-[44px] text-xs gap-1.5 font-semibold touch-target ${
+                          f.maintenanceStatus === "MAINTENANCE"
+                            ? "bg-amber-600 hover:bg-amber-700 text-white border-none"
+                            : "text-muted-foreground"
+                        }`}
+                        onClick={() => handleRequestToggleMaintenance(f)}
+                      >
+                        <Wrench className="h-4 w-4" />
+                        <span>
+                          {f.maintenanceStatus === "MAINTENANCE" ? "Maintenance" : "Normal"}
+                        </span>
+                      </Button>
+                    </div>
+
+                    <div className="text-[10px] text-muted-foreground flex items-center justify-between pt-1 border-t border-border/40">
+                      <span>Diubah: {f.updatedByName || "System"}</span>
+                      <span>
+                        {f.lastChangedAt
+                          ? new Date(f.lastChangedAt).toLocaleDateString("id-ID", {
+                              day: "numeric",
+                              month: "short",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : "-"}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop Full Table View (Hidden on mobile) */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-xs text-left data-tabular">
                   <thead>
                     <tr className="border-b border-border bg-muted/40 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
@@ -633,7 +730,7 @@ export function DeveloperDashboardView() {
                           </div>
                         </td>
 
-                        <td className="py-3 px-4 font-mono text-[11px] text-teal-700 dark:text-teal-400">
+                        <td className="py-3 px-4 font-mono text-[11px] text-primary">
                           {f.route}
                         </td>
 
@@ -657,7 +754,7 @@ export function DeveloperDashboardView() {
                           <Button
                             size="sm"
                             variant={f.isEnabled ? "default" : "outline"}
-                            className={`h-7 px-2.5 text-[11px] gap-1 font-semibold ${
+                            className={`h-8 px-3 text-[11px] gap-1 font-semibold ${
                               f.isEnabled
                                 ? "bg-emerald-700 hover:bg-emerald-800 text-white"
                                 : "text-muted-foreground"
@@ -682,7 +779,7 @@ export function DeveloperDashboardView() {
                           <Button
                             size="sm"
                             variant={f.maintenanceStatus === "MAINTENANCE" ? "destructive" : "outline"}
-                            className={`h-7 px-2 text-[11px] gap-1 font-semibold ${
+                            className={`h-8 px-2.5 text-[11px] gap-1 font-semibold ${
                               f.maintenanceStatus === "MAINTENANCE"
                                 ? "bg-amber-600 hover:bg-amber-700 text-white border-none"
                                 : "text-muted-foreground"
@@ -739,7 +836,7 @@ export function DeveloperDashboardView() {
         <div className="space-y-4">
           <Card>
             <CardHeader className="pb-3 border-b border-border">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <CardTitle className="text-base font-bold text-foreground">
                     Matriks Otorisasi Hak Akses Granular (RBAC)
@@ -748,17 +845,21 @@ export function DeveloperDashboardView() {
                     Hak akses tersimpan di database, dicatat dalam audit log, dan diperiksa oleh backend pada setiap endpoint.
                   </CardDescription>
                 </div>
-                <div className="relative w-64">
+                <div className="relative w-full sm:w-64">
                   <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
                   <Input
                     placeholder="Filter izin..."
                     value={permSearch}
                     onChange={(e) => setPermSearch(e.target.value)}
-                    className="pl-8 text-xs h-8"
+                    className="pl-8 text-xs h-9"
                   />
                 </div>
               </div>
             </CardHeader>
+            <div className="px-4 py-2 bg-muted/30 border-b border-border flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <Sliders className="h-3.5 w-3.5 text-primary shrink-0" />
+              <span>Geser tabel ke kanan untuk melihat otorisasi seluruh peran (Admin, TU, Kepsek, Guru, Siswa).</span>
+            </div>
 
             <CardContent className="p-0">
               <div className="overflow-x-auto">

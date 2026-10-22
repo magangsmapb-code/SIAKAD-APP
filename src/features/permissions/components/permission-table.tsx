@@ -146,80 +146,139 @@ export function PermissionTable() {
             }}
           />
         ) : (
-          <div className="overflow-x-auto rounded-md border border-border mt-2">
-            <table className="w-full text-left text-xs min-w-[650px]">
-              <thead className="bg-muted/50 border-b border-border text-muted-foreground uppercase text-[10px] tracking-wider">
-                <tr>
-                  <th className="py-3 px-3.5 font-semibold">Nama Siswa</th>
-                  <th className="py-3 px-3 font-semibold">Jenis Izin</th>
-                  <th className="py-3 px-3 font-semibold">Rentang Waktu</th>
-                  <th className="py-3 px-3 font-semibold">Alasan & Dokumen</th>
-                  <th className="py-3 px-3 font-semibold">Status</th>
-                  <th className="py-3 px-3 text-right font-semibold">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/60">
-                {filtered.map((item) => (
-                  <tr key={item.id} className="hover:bg-muted/30 transition-colors">
-                    <td className="py-3 px-3.5">
-                      <div className="flex flex-col">
-                        <span className="font-semibold text-foreground">
-                          {item.studentName}
-                        </span>
-                        <span className="text-[11px] text-muted-foreground">
-                          NIS: {item.studentNis} • {item.className}
-                        </span>
+          <>
+            {/* Mobile Card List View (< md) */}
+            <div className="block md:hidden divide-y divide-border/60 rounded-lg border border-border bg-card mt-2">
+              {filtered.map((item) => (
+                <div key={item.id} className="p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <span className="font-bold text-sm text-foreground block">
+                        {item.studentName}
+                      </span>
+                      <span className="text-xs text-muted-foreground font-mono">
+                        NIS: {item.studentNis} • {item.className}
+                      </span>
+                    </div>
+                    {getStatusBadge(item.status)}
+                  </div>
+
+                  <div className="flex items-center gap-2 text-xs">
+                    <Badge variant="outline" className="font-semibold text-xs">
+                      {item.type}
+                    </Badge>
+                    <div className="flex items-center gap-1.5 font-medium text-foreground ml-auto">
+                      <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span>{item.startDate} ({item.totalDays} hari)</span>
+                    </div>
+                  </div>
+
+                  <div className="bg-muted/40 p-2.5 rounded-lg space-y-1">
+                    <p className="text-xs text-foreground font-medium leading-relaxed">
+                      {item.reason}
+                    </p>
+                    {item.attachmentName && (
+                      <div className="flex items-center gap-1.5 text-[11px] text-primary pt-1">
+                        <Paperclip className="h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">{item.attachmentName}</span>
                       </div>
-                    </td>
+                    )}
+                  </div>
 
-                    <td className="py-3 px-3">
-                      <Badge variant="outline" className="font-semibold text-xs">
-                        {item.type}
-                      </Badge>
-                    </td>
+                  <div className="pt-1">
+                    <Button
+                      variant={item.status === "MENUNGGU" ? "default" : "outline"}
+                      size="sm"
+                      className="w-full h-11 min-h-[44px] text-xs gap-2 font-semibold touch-target"
+                      onClick={() => {
+                        setSelectedPermission(item);
+                        setModalOpen(true);
+                      }}
+                    >
+                      <FileText className="h-4 w-4" />
+                      <span>{item.status === "MENUNGGU" ? "Verifikasi Pengajuan" : "Lihat Detail Berkas"}</span>
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
 
-                    <td className="py-3 px-3">
-                      <div className="flex items-center gap-1.5 font-medium text-foreground">
-                        <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span>{item.startDate} ({item.totalDays} hari)</span>
-                      </div>
-                    </td>
-
-                    <td className="py-3 px-3 max-w-xs">
-                      <p className="truncate text-foreground font-medium">
-                        {item.reason}
-                      </p>
-                      {item.attachmentName && (
-                        <div className="flex items-center gap-1 text-[11px] text-primary mt-0.5">
-                          <Paperclip className="h-3 w-3" />
-                          <span className="truncate">{item.attachmentName}</span>
-                        </div>
-                      )}
-                    </td>
-
-                    <td className="py-3 px-3">
-                      {getStatusBadge(item.status)}
-                    </td>
-
-                    <td className="py-3 px-3 text-right">
-                      <Button
-                        variant={item.status === "MENUNGGU" ? "default" : "outline"}
-                        size="sm"
-                        className="h-8 text-xs gap-1"
-                        onClick={() => {
-                          setSelectedPermission(item);
-                          setModalOpen(true);
-                        }}
-                      >
-                        <FileText className="h-3.5 w-3.5" />
-                        {item.status === "MENUNGGU" ? "Verifikasi" : "Detail"}
-                      </Button>
-                    </td>
+            {/* Desktop Table View (>= md) */}
+            <div className="hidden md:block overflow-x-auto rounded-md border border-border mt-2">
+              <table className="w-full text-left text-xs min-w-[650px]">
+                <thead className="bg-muted/50 border-b border-border text-muted-foreground uppercase text-[10px] tracking-wider">
+                  <tr>
+                    <th className="py-3 px-3.5 font-semibold">Nama Siswa</th>
+                    <th className="py-3 px-3 font-semibold">Jenis Izin</th>
+                    <th className="py-3 px-3 font-semibold">Rentang Waktu</th>
+                    <th className="py-3 px-3 font-semibold">Alasan & Dokumen</th>
+                    <th className="py-3 px-3 font-semibold">Status</th>
+                    <th className="py-3 px-3 text-right font-semibold">Aksi</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-border/60">
+                  {filtered.map((item) => (
+                    <tr key={item.id} className="hover:bg-muted/30 transition-colors">
+                      <td className="py-3 px-3.5">
+                        <div className="flex flex-col">
+                          <span className="font-semibold text-foreground">
+                            {item.studentName}
+                          </span>
+                          <span className="text-[11px] text-muted-foreground">
+                            NIS: {item.studentNis} • {item.className}
+                          </span>
+                        </div>
+                      </td>
+
+                      <td className="py-3 px-3">
+                        <Badge variant="outline" className="font-semibold text-xs">
+                          {item.type}
+                        </Badge>
+                      </td>
+
+                      <td className="py-3 px-3">
+                        <div className="flex items-center gap-1.5 font-medium text-foreground">
+                          <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span>{item.startDate} ({item.totalDays} hari)</span>
+                        </div>
+                      </td>
+
+                      <td className="py-3 px-3 max-w-xs">
+                        <p className="truncate text-foreground font-medium">
+                          {item.reason}
+                        </p>
+                        {item.attachmentName && (
+                          <div className="flex items-center gap-1 text-[11px] text-primary mt-0.5">
+                            <Paperclip className="h-3 w-3" />
+                            <span className="truncate">{item.attachmentName}</span>
+                          </div>
+                        )}
+                      </td>
+
+                      <td className="py-3 px-3">
+                        {getStatusBadge(item.status)}
+                      </td>
+
+                      <td className="py-3 px-3 text-right">
+                        <Button
+                          variant={item.status === "MENUNGGU" ? "default" : "outline"}
+                          size="sm"
+                          className="h-8 text-xs gap-1"
+                          onClick={() => {
+                            setSelectedPermission(item);
+                            setModalOpen(true);
+                          }}
+                        >
+                          <FileText className="h-3.5 w-3.5" />
+                          {item.status === "MENUNGGU" ? "Verifikasi" : "Detail"}
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </CardContent>
 

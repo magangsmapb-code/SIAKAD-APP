@@ -318,67 +318,115 @@ export function AuditLogView() {
               />
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs min-w-[760px] data-tabular">
-                <thead>
-                  <tr className="border-b border-border bg-muted/40 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                    <th className="py-3 px-4">Waktu Kejadian</th>
-                    <th className="py-3 px-4">Operator / Pengguna</th>
-                    <th className="py-3 px-4">Tindakan (Action)</th>
-                    <th className="py-3 px-4">Entitas & ID</th>
-                    <th className="py-3 px-4">Alamat IP</th>
-                    <th className="py-3 px-4 text-right">Rincian Data</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/60">
-                  {paginatedLogs.map((log) => (
-                    <tr key={log.id} className="hover:bg-muted/30 transition-colors">
-                      <td className="py-3 px-4 font-mono text-[11px] text-foreground">
-                        <div className="flex items-center gap-1.5">
-                          <Clock className="h-3 w-3 text-muted-foreground shrink-0" />
-                          <span>{formatTimestamp(log.createdAt)}</span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex flex-col">
-                          <span className="font-semibold text-foreground">{log.actorName}</span>
-                          <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
-                            {log.actorRole}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        {getActionBadge(log.action)}
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex flex-col">
-                          <span className="font-semibold text-foreground text-[11px]">
-                            {log.entity}
-                          </span>
-                          <span className="text-[10px] text-muted-foreground font-mono">
-                            {log.entityId}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 font-mono text-[11px] text-muted-foreground">
-                        {log.ipAddress || "127.0.0.1"}
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleOpenDetail(log)}
-                          className="h-7 text-[11px] px-2.5 gap-1 text-primary hover:bg-primary/10 border-primary/20"
-                        >
-                          <Eye className="h-3 w-3" />
-                          <span>Detail Diff</span>
-                        </Button>
-                      </td>
+            <>
+              {/* Mobile Card List View (< md) */}
+              <div className="block md:hidden divide-y divide-border/60">
+                {paginatedLogs.map((log) => (
+                  <div key={log.id} className="p-4 space-y-2.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <span className="font-bold text-sm text-foreground">{log.actorName}</span>
+                        <span className="block text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+                          {log.actorRole}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1 font-mono text-[10px] text-muted-foreground shrink-0">
+                        <Clock className="h-3 w-3 text-muted-foreground" />
+                        <span>{formatTimestamp(log.createdAt)}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      {getActionBadge(log.action)}
+                      <span className="text-xs font-semibold text-foreground">
+                        {log.entity}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground font-mono">
+                        #{log.entityId}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-2 border-t border-border/40">
+                      <span className="font-mono text-[10px] text-muted-foreground">
+                        IP: {log.ipAddress || "127.0.0.1"}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleOpenDetail(log)}
+                        className="h-10 min-h-[44px] text-xs px-3.5 gap-1.5 text-primary hover:bg-primary/10 border-primary/20 touch-target font-semibold"
+                      >
+                        <Eye className="h-4 w-4" />
+                        <span>Detail Diff</span>
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop Full Table View (>= md) */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left text-xs min-w-[760px] data-tabular">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/40 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      <th className="py-3 px-4">Waktu Kejadian</th>
+                      <th className="py-3 px-4">Operator / Pengguna</th>
+                      <th className="py-3 px-4">Tindakan (Action)</th>
+                      <th className="py-3 px-4">Entitas & ID</th>
+                      <th className="py-3 px-4">Alamat IP</th>
+                      <th className="py-3 px-4 text-right">Rincian Data</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-border/60">
+                    {paginatedLogs.map((log) => (
+                      <tr key={log.id} className="hover:bg-muted/30 transition-colors">
+                        <td className="py-3 px-4 font-mono text-[11px] text-foreground">
+                          <div className="flex items-center gap-1.5">
+                            <Clock className="h-3 w-3 text-muted-foreground shrink-0" />
+                            <span>{formatTimestamp(log.createdAt)}</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex flex-col">
+                            <span className="font-semibold text-foreground">{log.actorName}</span>
+                            <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+                              {log.actorRole}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          {getActionBadge(log.action)}
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex flex-col">
+                            <span className="font-semibold text-foreground text-[11px]">
+                              {log.entity}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground font-mono">
+                              {log.entityId}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 font-mono text-[11px] text-muted-foreground">
+                          {log.ipAddress || "127.0.0.1"}
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleOpenDetail(log)}
+                            className="h-8 text-[11px] px-3 gap-1 text-primary hover:bg-primary/10 border-primary/20"
+                          >
+                            <Eye className="h-3.5 w-3.5" />
+                            <span>Detail Diff</span>
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
 
           {filteredLogs.length > 0 && (
