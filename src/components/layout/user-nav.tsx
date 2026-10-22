@@ -55,10 +55,10 @@ export function UserNav() {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
-            className="flex items-center gap-2.5 rounded-full p-1 transition-all hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring"
+            className="flex items-center gap-2.5 rounded-full p-1.5 min-h-[44px] min-w-[44px] justify-center transition-all hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring"
             aria-label="Menu profil pengguna"
           >
-            <Avatar className="h-8 w-8 border border-primary/20">
+            <Avatar className="h-8 w-8 border border-primary/20 shrink-0">
               <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
                 {avatarFallback}
               </AvatarFallback>

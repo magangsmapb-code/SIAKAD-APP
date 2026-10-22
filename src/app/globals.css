@@ -14,11 +14,11 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    /* SIAKAD Primary Emerald/Teal (#0F766E) and Primary Light (#14B8A6) */
-    --primary: 175 77% 26%; /* #0F766E - Deep Emerald / Teal 700 */
-    --primary-foreground: 0 0% 100%; /* Pure White */
-    --primary-hover: 173 80% 40%; /* #14B8A6 - Teal 500 */
-    --primary-soft: 174 60% 97%; /* #F0FDFA - Teal 50 */
+    /* SIAKAD Primary: Professional Academic Blue (#2563EB) & Dark Blue (#1D4ED8) */
+    --primary: 221.2 83.2% 53.3%; /* #2563EB - Professional Academic Blue */
+    --primary-foreground: 210 40% 98%; /* #F8FAFC */
+    --primary-hover: 224.3 76.3% 48%; /* #1D4ED8 - Blue 700 */
+    --primary-soft: 214 100% 97%; /* #EFF6FF - Blue 50 */
 
     /* Navy Brand Accent (Aligned with Deep Slate Navy) */
     --navy-header: 222 47% 11%; /* #0F172A */
@@ -32,18 +32,19 @@
     --muted: 210 40% 96.1%;
     --muted-foreground: 215 16% 47%; /* #64748B - Slate 500 */
 
-    /* Accent & Interactive States */
-    --accent: 174 60% 97%;
-    --accent-foreground: 175 77% 26%;
+    /* Accent: Measured Academic Purple (#7C3AED) */
+    --accent: 262 83% 58%; /* #7C3AED */
+    --accent-foreground: 210 40% 98%;
+    --accent-soft: 265 100% 97%; /* #FAF5FF */
 
-    /* Destructive / Alert (High Contrast Red) */
+    /* Destructive / Alert (High Contrast Red #DC2626) */
     --destructive: 0 84.2% 60.2%; /* #EF4444 */
     --destructive-foreground: 0 0% 100%;
 
     /* Borders & Inputs (#E2E8F0) */
     --border: 214 32% 91%; /* #E2E8F0 */
     --input: 214 32% 88%;
-    --ring: 173 80% 40%; /* #14B8A6 Focus Ring */
+    --ring: 221.2 83.2% 53.3%; /* #2563EB Focus Ring */
 
     --radius: 0.5rem;
 
@@ -89,10 +90,10 @@
     --popover: 222 47% 11%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 173 80% 40%; /* #14B8A6 - Primary Light for Dark Mode */
+    --primary: 217.2 91.2% 59.8%; /* #3B82F6 - Primary for Dark Mode */
     --primary-foreground: 222 47% 11%;
-    --primary-hover: 174 72% 48%;
-    --primary-soft: 175 77% 15%;
+    --primary-hover: 221.2 83.2% 53.3%;
+    --primary-soft: 224 76% 18%;
 
     --navy-header: 222 47% 8%;
     --navy-sidebar: 224 47% 6%;
@@ -103,15 +104,15 @@
     --muted: 217 32% 17.5%;
     --muted-foreground: 215 20% 65%;
 
-    --accent: 175 77% 18%;
-    --accent-foreground: 173 80% 70%;
+    --accent: 263 70% 60%;
+    --accent-foreground: 210 40% 98%;
 
     --destructive: 0 62.8% 45%;
     --destructive-foreground: 210 40% 98%;
 
     --border: 217 32% 17.5%;
     --input: 217 32% 17.5%;
-    --ring: 173 80% 40%;
+    --ring: 217.2 91.2% 59.8%;
 
     /* Status Dark Theme Adjustments */
     --status-hadir: 142 70% 45%;
@@ -162,27 +163,33 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Primary Button (#0F766E -> Hover #14B8A6) */
+/* Mobile Touch Target helper for WCAG 44px */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Primary Button (#2563EB -> Hover #1D4ED8) */
 .siakad-btn {
-  background: linear-gradient(135deg, #0F766E 0%, #0D9488 60%, #14B8A6 100%);
-  box-shadow: 0 6px 16px -4px rgba(15, 118, 110, 0.45);
+  background: linear-gradient(135deg, #1D4ED8 0%, #2563EB 60%, #3B82F6 100%);
+  box-shadow: 0 4px 14px -2px rgba(37, 99, 235, 0.35);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .siakad-btn:hover {
-  background: #14B8A6;
+  background: #1D4ED8;
   transform: translateY(-1px);
-  box-shadow: 0 10px 20px -4px rgba(20, 184, 166, 0.55);
+  box-shadow: 0 8px 18px -2px rgba(37, 99, 235, 0.45);
 }
 .siakad-btn:active {
   transform: translateY(1px);
 }
 
 .siakad-header-gradient {
-  background: linear-gradient(135deg, #0F766E 0%, #115E59 65%, #14B8A6 100%);
+  background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 55%, #1D4ED8 100%);
 }
 
 .siakad-soft-bg {
-  background: radial-gradient(circle at 50% 22%, #CCFBF1 0%, #F8FAFC 68%);
+  background: radial-gradient(circle at 50% 22%, #DBEAFE 0%, #F8FAFC 68%);
 }
 
 /* Semantic Badges (Exact Hex Codes) */

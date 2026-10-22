@@ -120,9 +120,9 @@ export function Topbar({ className = "" }: TopbarProps) {
   return (
     <>
       <header
-        className={`sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-border bg-card/95 px-3 sm:px-6 backdrop-blur supports-[backdrop-filter]:bg-card/80 gap-2 sm:gap-4 ${className}`}
+        className={`sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-border bg-card/95 px-2 sm:px-6 backdrop-blur supports-[backdrop-filter]:bg-card/80 gap-1.5 sm:gap-4 ${className}`}
       >
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           <MobileNav />
           <div className="hidden lg:block">
             <BreadcrumbNav items={breadcrumbs} />
@@ -130,13 +130,13 @@ export function Topbar({ className = "" }: TopbarProps) {
         </div>
 
         {/* Search Bar & Center Actions */}
-        <div className="flex items-center gap-2 sm:gap-3 ml-auto">
+        <div className="flex items-center gap-1.5 sm:gap-3 ml-auto">
           {/* Quick Search Button */}
           <Button
             variant="outline"
             size="sm"
             onClick={() => setSearchOpen(true)}
-            className="hidden md:flex items-center gap-2 text-xs text-muted-foreground h-9 px-3 w-48 lg:w-60 justify-between bg-muted/40 hover:bg-muted/70 border-border"
+            className="hidden md:flex items-center gap-2 text-xs text-muted-foreground h-10 px-3 w-48 lg:w-60 justify-between bg-muted/40 hover:bg-muted/70 border-border"
           >
             <div className="flex items-center gap-2 truncate">
               <Search className="h-3.5 w-3.5 text-muted-foreground" />
@@ -152,16 +152,16 @@ export function Topbar({ className = "" }: TopbarProps) {
             variant="ghost"
             size="icon"
             onClick={() => setSearchOpen(true)}
-            className="md:hidden h-9 w-9 text-muted-foreground"
+            className="md:hidden h-11 w-11 min-h-[44px] min-w-[44px] flex items-center justify-center text-muted-foreground hover:text-foreground"
             aria-label="Cari Data"
           >
-            <Search className="h-4 w-4" />
+            <Search className="h-5 w-5" />
           </Button>
 
           {/* Academic Year Selector */}
           <div className="hidden sm:block">
             <Select value={academicYear} onValueChange={handleAcademicYearChange}>
-              <SelectTrigger className="h-9 text-xs w-[170px] bg-muted/30 border-border font-medium">
+              <SelectTrigger className="h-10 text-xs w-[170px] bg-muted/30 border-border font-medium">
                 <div className="flex items-center gap-1.5 truncate">
                   <Calendar className="h-3.5 w-3.5 text-primary shrink-0" />
                   <SelectValue placeholder="Tahun Ajaran" />
@@ -178,7 +178,7 @@ export function Topbar({ className = "" }: TopbarProps) {
           </div>
 
           {/* Live Academic Clock - Hydration Safe */}
-          <div className="hidden xl:flex items-center gap-2 rounded-full border border-border bg-muted/40 px-3 py-1 text-xs text-muted-foreground">
+          <div className="hidden xl:flex items-center gap-2 rounded-full border border-border bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground">
             <Clock className="h-3.5 w-3.5 text-primary animate-pulse" />
             <span
               className="font-mono text-[11px] font-medium text-foreground"
@@ -195,10 +195,10 @@ export function Topbar({ className = "" }: TopbarProps) {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-9 gap-1.5 text-xs bg-primary/5 hover:bg-primary/10 border-primary/30 text-primary font-semibold px-2.5 sm:px-3"
+                  className="h-10 min-h-[40px] sm:min-h-[44px] gap-1 sm:gap-1.5 text-xs bg-primary/5 hover:bg-primary/10 border-primary/30 text-primary font-semibold px-2 sm:px-3 touch-target"
                 >
                   <Sparkles className="h-3.5 w-3.5 text-amber-500 animate-spin-slow shrink-0" />
-                  <span className="truncate max-w-[85px] sm:max-w-none">
+                  <span className="truncate max-w-[65px] xs:max-w-[85px] sm:max-w-none">
                     {role === "ADMIN"
                       ? "🛡️ Admin"
                       : role === "GURU"
@@ -243,7 +243,7 @@ export function Topbar({ className = "" }: TopbarProps) {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <div className="flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-2.5 sm:px-3 py-1 text-xs text-primary font-semibold select-none">
+            <div className="flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-2.5 sm:px-3 py-1.5 text-xs text-primary font-semibold select-none">
               <span>
                 {role === "ADMIN"
                   ? "🛡️ Admin"
@@ -262,16 +262,16 @@ export function Topbar({ className = "" }: TopbarProps) {
               <Button
                 variant="outline"
                 size="icon"
-                className="relative h-9 w-9 rounded-full shrink-0"
+                className="relative h-11 w-11 min-h-[44px] min-w-[44px] rounded-full shrink-0 flex items-center justify-center touch-target"
                 aria-label="Pemberitahuan Sistem"
               >
                 <Bell className="h-4 w-4 text-muted-foreground" />
-                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-600 text-[9px] font-bold text-white ring-2 ring-background">
+                <span className="absolute 1 top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-rose-600 text-[9px] font-bold text-white ring-2 ring-background">
                   3
                 </span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80 p-2">
+            <DropdownMenuContent align="end" className="w-[calc(100vw-24px)] sm:w-80 max-w-sm p-2">
               <div className="flex items-center justify-between px-2 py-1.5">
                 <span className="text-xs font-bold text-foreground">
                   Pemberitahuan Presensi

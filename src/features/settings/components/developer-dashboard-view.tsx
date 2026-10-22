@@ -347,17 +347,18 @@ export function DeveloperDashboardView() {
   return (
     <div className="space-y-6">
       {/* Top Banner */}
-      <div className="rounded-2xl bg-gradient-to-r from-[#042F2E] via-[#0F766E] to-[#115E59] p-6 text-white shadow-card border border-teal-800/40">
+      {/* Header Banner - Academic Blue / Slate Scheme */}
+      <div className="rounded-2xl bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 p-5 sm:p-6 text-white shadow-card border border-blue-900/40">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-0.5 text-xs font-semibold backdrop-blur-md border border-white/10">
-              <Terminal className="h-3.5 w-3.5 text-teal-300" />
+          <div className="space-y-1.5">
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-blue-500/10 px-3 py-0.5 text-xs font-semibold backdrop-blur-md border border-blue-400/20 text-blue-300">
+              <Terminal className="h-3.5 w-3.5 text-blue-400" />
               <span>Developer Governance &amp; Feature Control Center</span>
             </div>
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
               Pusat Tata Kelola Fitur, Izin, &amp; Diagnostik SIAKAD
             </h1>
-            <p className="text-xs sm:text-sm text-slate-200 max-w-2xl">
+            <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
               Pusat pengelolaan aktivasi fitur, maintenance mode, matriks izin granular, audit jejak perubahan, dan topologi micro-service untuk tim arsitek dan pengembang.
             </p>
           </div>
@@ -368,7 +369,7 @@ export function DeveloperDashboardView() {
               size="sm"
               onClick={runHealthCheck}
               isLoading={testingPing}
-              className="bg-white/10 hover:bg-white/20 text-white border-white/20 text-xs gap-1.5"
+              className="bg-white/10 hover:bg-white/20 text-white border-white/20 text-xs gap-1.5 h-10 min-h-[40px] px-3.5"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${testingPing ? "animate-spin" : ""}`} />
               <span>Uji Latensi Ping</span>
@@ -380,7 +381,7 @@ export function DeveloperDashboardView() {
             >
               <Button
                 size="sm"
-                className="bg-teal-600 hover:bg-teal-500 text-white text-xs gap-1.5 shadow"
+                className="bg-blue-600 hover:bg-blue-500 text-white text-xs gap-1.5 shadow h-10 min-h-[40px] px-3.5"
               >
                 <FileCode2 className="h-3.5 w-3.5" />
                 <span>Swagger OpenAPI Spec</span>
@@ -406,12 +407,12 @@ export function DeveloperDashboardView() {
           </span>
         </Card>
 
-        <Card className="p-4 border-l-4 border-l-teal-600">
+        <Card className="p-4 border-l-4 border-l-blue-600">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-muted-foreground">Latensi Jaringan</span>
-            <Zap className="h-4 w-4 text-teal-600" />
+            <Zap className="h-4 w-4 text-blue-600" />
           </div>
-          <p className="text-xl font-bold text-teal-700 mt-1">
+          <p className="text-xl font-bold text-blue-700 dark:text-blue-400 mt-1">
             {health?.latencyMs !== undefined ? `${health.latencyMs} ms` : "0 ms"}
           </p>
           <span className="text-[11px] text-muted-foreground block mt-0.5">
