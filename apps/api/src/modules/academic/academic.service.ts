@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ConflictException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
@@ -10,7 +11,7 @@ import { CreateClassDto } from './dto/create-class.dto';
 import { CreateSubjectDto } from './dto/create-subject.dto';
 import { CreateAcademicYearDto } from './dto/create-academic-year.dto';
 import { CreateScheduleDto } from './dto/create-schedule.dto';
-import { DayOfWeek } from '@prisma/client';
+import { DayOfWeek, Role } from '@prisma/client';
 
 @Injectable()
 export class AcademicService {
@@ -325,9 +326,31 @@ export class AcademicService {
   // ---------------------------------------------------------------------------
   // Schedules
   // ---------------------------------------------------------------------------
-  async findAllSchedules(query: { classId?: string; teacherId?: string; dayOfWeek?: DayOfWeek }) {
+  async findAllSchedules(
+    query: { classId?: string; teacherId?: string; dayOfWeek?: DayOfWeek },
+    currentUser?: any,
+  ) {
     const where: any = { isActive: true };
-    if (query.classId) where.classId = query.classId;
+
+    if (currentUser?.role === Role.STUDENT) {
+      let studentClassId = currentUser.classId;
+      if (!studentClassId) {
+        const student = await this.prisma.student.findFirst({
+          where: { userId: currentUser.id },
+          select: { classId: true },
+        });
+        studentClassId = student?.classId;
+      }
+
+      if (query.classId && query.classId !== studentClassId) {
+        throw new ForbiddenException('Akses ditolak: Siswa hanya dapat mengakses jadwal kelasnya sendiri');
+      }
+
+      where.classId = studentClassId;
+    } else {
+      if (query.classId) where.classId = query.classId;
+    }
+
     if (query.teacherId) where.teacherId = query.teacherId;
     if (query.dayOfWeek) where.dayOfWeek = query.dayOfWeek;
 

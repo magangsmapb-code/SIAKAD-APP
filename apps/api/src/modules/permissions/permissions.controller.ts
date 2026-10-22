@@ -16,18 +16,21 @@ import { ReviewPermissionDto } from './dto/review-permission.dto';
 import { QueryPermissionDto } from './dto/query-permission.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { Permission } from '../../common/decorators/permissions.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Role } from '@prisma/client';
 
 @ApiTags('Pengajuan Izin')
 @Controller('permissions')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
 @ApiBearerAuth()
 export class PermissionsController {
   constructor(private readonly permissionsService: PermissionsService) {}
 
   @Get()
+  @Permission('permissions.view')
   @ApiOperation({ summary: 'Daftar pengajuan izin dengan pagination dan filter status' })
   async findAll(@Query() query: QueryPermissionDto, @CurrentUser() user: any) {
     const result = await this.permissionsService.findAll(query, user);
@@ -39,6 +42,8 @@ export class PermissionsController {
   }
 
   @Post()
+  @Roles(Role.STUDENT, Role.ADMIN, Role.SUPER_ADMIN)
+  @Permission('permissions.create')
   @ApiOperation({ summary: 'Ajukan permohonan izin atau sakit baru' })
   @ApiResponse({ status: 201, description: 'Pengajuan izin berhasil dibuat' })
   async create(
@@ -57,6 +62,7 @@ export class PermissionsController {
   }
 
   @Get(':id')
+  @Permission('permissions.view')
   @ApiOperation({ summary: 'Detail pengajuan izin berdasarkan ID' })
   async findOne(
     @Param('id') id: string,
@@ -74,6 +80,7 @@ export class PermissionsController {
 
   @Post(':id/approve')
   @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.TEACHER, Role.PRINCIPAL)
+  @Permission('permissions.review')
   @ApiOperation({ summary: 'Setujui permohonan izin (Guru Wali / Admin)' })
   async approve(
     @Param('id') id: string,
@@ -93,6 +100,7 @@ export class PermissionsController {
 
   @Post(':id/reject')
   @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.TEACHER, Role.PRINCIPAL)
+  @Permission('permissions.review')
   @ApiOperation({ summary: 'Tolak permohonan izin (Guru Wali / Admin)' })
   async reject(
     @Param('id') id: string,

@@ -89,6 +89,7 @@ export const ROLE_PERMISSION_MATRIX: Record<string, string[]> = {
     'audit.view',
     'developer.manage_features',
     'developer.view_diagnostics',
+    'attendance.view',
     'attendance.manage_settings',
     'attendance.manage_feature_access',
     'attendance.view_audit_log',
@@ -137,6 +138,7 @@ export const ROLE_PERMISSION_MATRIX: Record<string, string[]> = {
     'reports.view', 'reports.export',
   ],
   STUDENT: [
+    'students.view',
     'academic.schedules.view',
     'attendance.view', 'attendance.view_own', 'attendance.student.check_in', 'attendance.request_correction',
     'permissions.view', 'permissions.create',

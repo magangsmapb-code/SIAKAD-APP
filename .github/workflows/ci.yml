@@ -82,9 +82,10 @@ jobs:
 
       - name: Run Database Migrations (Isolated Test Database)
         working-directory: apps/api
-        run: npx prisma db push --skip-generate
+        run: npx prisma migrate deploy
         env:
           DATABASE_URL: postgresql://test_user:test_password_secure_123@localhost:5432/siakad_test_db?schema=public
+          DIRECT_URL: postgresql://test_user:test_password_secure_123@localhost:5432/siakad_test_db?schema=public
 
       - name: Run NestJS Unit Tests
         working-directory: apps/api
@@ -94,6 +95,19 @@ jobs:
           PORT: 4001
           APP_TIMEZONE: Asia/Jakarta
           DATABASE_URL: postgresql://test_user:test_password_secure_123@localhost:5432/siakad_test_db?schema=public
+          DIRECT_URL: postgresql://test_user:test_password_secure_123@localhost:5432/siakad_test_db?schema=public
+          JWT_ACCESS_SECRET: ci_test_access_secret_do_not_use_in_prod_min_32_chars
+          JWT_REFRESH_SECRET: ci_test_refresh_secret_do_not_use_in_prod_min_32_chars
+
+      - name: Run NestJS E2E Security Tests
+        working-directory: apps/api
+        run: npm run test:e2e
+        env:
+          NODE_ENV: test
+          PORT: 4001
+          APP_TIMEZONE: Asia/Jakarta
+          DATABASE_URL: postgresql://test_user:test_password_secure_123@localhost:5432/siakad_test_db?schema=public
+          DIRECT_URL: postgresql://test_user:test_password_secure_123@localhost:5432/siakad_test_db?schema=public
           JWT_ACCESS_SECRET: ci_test_access_secret_do_not_use_in_prod_min_32_chars
           JWT_REFRESH_SECRET: ci_test_refresh_secret_do_not_use_in_prod_min_32_chars
 

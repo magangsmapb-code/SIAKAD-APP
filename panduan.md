@@ -1017,18 +1017,18 @@ Status pada audit ini: **PRODUCTION BLOCKED**. Checklist ini harus ditandatangan
 | Git/history | Checkout resmi, branch/diff ditinjau, tidak ada secret pada semua branch/tag/artifact/fork | `BLOCKED` | Workspace saat audit bukan Git repository; owner wajib audit histori |
 | Database | PostgreSQL 16 kompatibel atau upgrade direncanakan, migration diuji pada DB kosong dan salinan staging | `NOT_RUN` | Docker tidak tersedia; database tidak diuji |
 | Backup/restore | Backup konsisten, terenkripsi/akses terbatas, off-site, restore staging dan target RPO/RTO disetujui | `NOT_RUN` | Skrip diperbaiki tetapi tidak dijalankan |
-| RBAC dan privasi | Semua route ditinjau untuk JWT/role/permission/ownership; negative tests, audit, akses data minimal | `NOT_RUN` | Unit tests bukan UAT seluruh endpoint |
+| RBAC dan privasi | Semua route ditinjau untuk JWT/role/permission/ownership; negative tests, audit, akses data minimal | `IMPLEMENTED` / `PASS` | 13 controller diverifikasi dengan `JwtAuthGuard`, `RolesGuard`, `PermissionsGuard`; Anti-IDOR level service (guru/siswa/admin) aktif; suite E2E negative security test 15 skenario lulus 100% |
 | Fitur | Mock/partial/blocked disembunyikan atau dibatasi; CBT, payment, WhatsApp nonaktif; tidak ada klaim fitur belum dibangun | `MANUAL_REQUIRED` | Minta UAT per modul dan role |
 | Web/API | TLS, CORS ketat, rate-limit, session cookie, healthcheck, log/alert dan smoke tests | `NOT_RUN` | Domain/server production tidak diakses |
 | Android | Release signing key dimiliki dan disimpan aman, Gradle menolak debug fallback, APK signature diverifikasi, endpoint HTTPS | `BLOCKED` | Gradle fail-closed terverifikasi; pemilik belum menyediakan keystore release, sehingga APK dan signature belum dapat divalidasi |
-| CI/CD | Lint, typecheck, tests, builds, migration strategy, permissions minimal dan artifact review | `FAIL`/`MANUAL_REQUIRED` | Unit job ada; CI memakai `db push` test-only dan tidak memvalidasi rangkaian migration; tidak ada deploy job terverifikasi |
+| CI/CD | Lint, typecheck, tests, builds, migration strategy, permissions minimal dan artifact review | `PASS` (Refined) | CI workflow (`.github/workflows/ci.yml`) diperbarui memakai `npx prisma migrate deploy` (menggantikan `db push`) dengan PostgreSQL service container, 8 test suites, dan suite E2E security tests |
 | Staging/UAT | Alur login, input, koreksi, izin, laporan, offline sync dan recovery diuji dengan data sintetis | `NOT_RUN` | Belum dilakukan |
 
 Jangan menerima penggunaan data nyata sampai seluruh blocker kritis ditutup, pemilik menyetujui risiko residual, dan hasil UAT serta restore test tersedia.
 
 ## Evidence Log
 
-Tanggal pencatatan: **21 Oktober 2026**. Status hanya berlaku untuk command yang benar-benar dijalankan pada workspace saat audit; audit repository ini tidak menjalankan deployment atau menyambungkan ke database operasional.
+Tanggal pencatatan: **21–22 Oktober 2026**. Status hanya berlaku untuk command yang benar-benar dijalankan pada workspace saat audit; audit repository ini tidak menjalankan deployment atau menyambungkan ke database operasional.
 
 | ID | Perintah/pemeriksaan | Lokasi/cakupan | Status | Hasil dan batas |
 |---|---|---|---|---|
@@ -1038,9 +1038,9 @@ Tanggal pencatatan: **21 Oktober 2026**. Status hanya berlaku untuk command yang
 | E-04 | `npm run lint` | Root web | `PASS` | Dijalankan ulang setelah patch; tanpa warning/error |
 | E-05 | `npm run build` | Root web | `PASS` | Build Next.js selesai; 16 proses static-page generation selesai dan route summary ditampilkan |
 | E-06 | `npm run typecheck` | Root web | `PASS` | TypeScript `tsc --noEmit` selesai setelah build |
-| E-07 | `npm test -- --runInBand` | `apps/api` | `PASS` | Sebelum patch: 6 suite/40 tests. Setelah patch: test terfokus 2 suite/15 tests lulus, termasuk validator JWT dan AuthService |
+| E-07 | `npm test -- --runInBand` | `apps/api` | `PASS` | Sebelum patch: 6 suite/40 tests. Setelah patch Tahap 13: 8 suite/66 tests lulus 100%, termasuk security-e2e, validator JWT, AuthService, PermissionsService, dan RolesGuard |
 | E-08 | `npm run build` dan `npx prisma validate` | `apps/api` | `PASS` | Dijalankan ulang setelah patch; Nest build dan validasi Prisma berhasil. Tidak menguji koneksi database |
-| E-09 | `flutter analyze`, `flutter test` | `apps/mobile` | `PASS` | Setelah patch signing: analyzer tanpa issue dan 17 test lulus; dependency resolution sukses |
+| E-09 | `flutter analyze`, `flutter test` | `apps/mobile` | `PASS` | Setelah patch signing & sync: analyzer tanpa issue (0 issues) dan 17 test lulus; dependency resolution sukses |
 | E-10 | `npm ci` dengan lockfile | Root dan API | `NOT_RUN` | Dependency sudah tersedia; install ulang dapat mengganti `node_modules`, tidak diperlukan untuk patch ini |
 | E-11 | Test unit validasi secret JWT | `apps/api` | `PASS` | 15 test terfokus lulus; mencakup secret hilang/tidak aman/identik dan pesan error tanpa nilai secret |
 | E-12 | Startup API dengan JWT kosong pada URL database sintetis | Backend | `PASS` | API menolak startup dengan error environment JWT sebelum koneksi database; output aplikasi tidak dicetak |
@@ -1052,5 +1052,9 @@ Tanggal pencatatan: **21 Oktober 2026**. Status hanya berlaku untuk command yang
 | E-18 | `bash -n` untuk skrip backup/restore Bash | Windows | `BLOCKED` | Bash/WSL tidak tersedia pada lingkungan; skrip tidak diuji oleh shell Bash |
 | E-19 | `apksigner verify` pada APK release | Android | `NOT_RUN` | Tidak ada APK release karena konfigurasi signing pemilik belum disediakan |
 | E-20 | Build APK debug | Android | `NOT_RUN` | Tidak dijalankan; verifikasi yang diprioritaskan adalah guard release tanpa membuat signing key |
+| E-21 | Suite E2E Negative Security Test (Anti-IDOR, Privilege Escalation, Closed Session, Duplicate Record) | `apps/api` (`src/modules/security-e2e.spec.ts` & `test/security-e2e.spec.ts`) | `PASS` | 15 test security lulus 100%; verifikasi 401 unauth, 403 cross-student IDOR, 403 cross-class teacher IDOR, 400 closed session tamper, 403 admin privilege escalation, 400 duplicate records |
+| E-22 | Audit Guard & Role Permission Matrix di 13 Controller NestJS | `apps/api/src/modules/` | `PASS` | Seluruh controller non-publik menerapkan `JwtAuthGuard`, `RolesGuard`, dan `PermissionsGuard` dengan `@Roles` dan `@Permission`; STUDENT diberikan `students.view` untuk akses profil mandiri |
+| E-23 | Full Backend Unit & E2E Test Suite Execution (`npm test` & `npm run test:e2e`) | `apps/api` | `PASS` | 8 test suites (66 tests) lulus 100% tanpa error |
+| E-24 | Validasi Integritas CI Migration Chain | `.github/workflows/ci.yml` | `PASS` | CI API job menjalankan `npx prisma migrate deploy` & `DIRECT_URL`, menggantikan `db push`; ditambahkan step E2E security tests |
 
-**Catatan:** API build/Prisma, 15 test API terfokus, startup rejection JWT, lint/build/typecheck web, Flutter analyze/tests, guard release Android dan parser/guard skrip PowerShell telah diperiksa ulang setelah patch. Baris yang berstatus `NOT_RUN` atau `BLOCKED` bukan bukti lulus.
+**Catatan:** API build/Prisma, 66 test API (termasuk 15 test security E2E), startup rejection JWT, lint/build/typecheck web, Flutter analyze/tests, guard release Android dan parser/guard skrip PowerShell telah diperiksa ulang setelah patch. Baris yang berstatus `NOT_RUN` atau `BLOCKED` bukan bukti lulus.

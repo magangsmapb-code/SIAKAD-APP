@@ -17,13 +17,15 @@ import { CreateAcademicYearDto } from './dto/create-academic-year.dto';
 import { CreateScheduleDto } from './dto/create-schedule.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { Permission } from '../../common/decorators/permissions.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { DayOfWeek, Role } from '@prisma/client';
 
 @ApiTags('Struktur Akademik')
 @Controller()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
 @ApiBearerAuth()
 export class AcademicController {
   constructor(private readonly academicService: AcademicService) {}
@@ -32,6 +34,7 @@ export class AcademicController {
   // Academic Years
   // ---------------------------------------------------------------------------
   @Get('academic-years')
+  @Permission('academic.classes.view')
   @ApiOperation({ summary: 'Daftar semua tahun ajaran' })
   async findAllAcademicYears() {
     const data = await this.academicService.findAllAcademicYears();
@@ -39,6 +42,7 @@ export class AcademicController {
   }
 
   @Get('academic-years/active')
+  @Permission('academic.classes.view')
   @ApiOperation({ summary: 'Dapatkan tahun ajaran yang sedang aktif' })
   async findActiveAcademicYear() {
     const data = await this.academicService.findActiveAcademicYear();
@@ -47,6 +51,7 @@ export class AcademicController {
 
   @Post('academic-years')
   @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @Permission('academic.classes.manage')
   @ApiOperation({ summary: 'Tambah tahun ajaran baru (Admin)' })
   async createAcademicYear(@Body() dto: CreateAcademicYearDto, @CurrentUser() user: any) {
     const data = await this.academicService.createAcademicYear(dto, user);
@@ -55,6 +60,7 @@ export class AcademicController {
 
   @Post('academic-years/:id/activate')
   @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @Permission('academic.classes.manage')
   @ApiOperation({ summary: 'Aktifkan tahun ajaran (Admin)' })
   async setActiveAcademicYear(@Param('id') id: string, @CurrentUser() user: any) {
     const result = await this.academicService.setActiveAcademicYear(id, user);
@@ -65,6 +71,7 @@ export class AcademicController {
   // Classes
   // ---------------------------------------------------------------------------
   @Get('classes')
+  @Permission('academic.classes.view')
   @ApiOperation({ summary: 'Daftar kelas dengan filter' })
   async findAllClasses(
     @Query('academicYearId') academicYearId?: string,
@@ -76,6 +83,7 @@ export class AcademicController {
   }
 
   @Get('classes/:id')
+  @Permission('academic.classes.view')
   @ApiOperation({ summary: 'Detail kelas dan daftar siswa aktif' })
   async findClassById(@Param('id') id: string) {
     const data = await this.academicService.findClassById(id);
@@ -84,6 +92,7 @@ export class AcademicController {
 
   @Post('classes')
   @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @Permission('academic.classes.manage')
   @ApiOperation({ summary: 'Tambah kelas baru (Admin)' })
   async createClass(@Body() dto: CreateClassDto, @CurrentUser() user: any) {
     const data = await this.academicService.createClass(dto, user);
@@ -92,6 +101,7 @@ export class AcademicController {
 
   @Patch('classes/:id')
   @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @Permission('academic.classes.manage')
   @ApiOperation({ summary: 'Perbarui kelas (Admin)' })
   async updateClass(
     @Param('id') id: string,
@@ -106,6 +116,7 @@ export class AcademicController {
   // Subjects
   // ---------------------------------------------------------------------------
   @Get('subjects')
+  @Permission('academic.subjects.view')
   @ApiOperation({ summary: 'Daftar mata pelajaran' })
   async findAllSubjects(@Query('category') category?: string, @Query('search') search?: string) {
     const data = await this.academicService.findAllSubjects({ category, search });
@@ -113,6 +124,7 @@ export class AcademicController {
   }
 
   @Get('subjects/:id')
+  @Permission('academic.subjects.view')
   @ApiOperation({ summary: 'Detail mata pelajaran' })
   async findSubjectById(@Param('id') id: string) {
     const data = await this.academicService.findSubjectById(id);
@@ -121,6 +133,7 @@ export class AcademicController {
 
   @Post('subjects')
   @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @Permission('academic.subjects.manage')
   @ApiOperation({ summary: 'Tambah mata pelajaran baru (Admin)' })
   async createSubject(@Body() dto: CreateSubjectDto, @CurrentUser() user: any) {
     const data = await this.academicService.createSubject(dto, user);
@@ -129,6 +142,7 @@ export class AcademicController {
 
   @Patch('subjects/:id')
   @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @Permission('academic.subjects.manage')
   @ApiOperation({ summary: 'Perbarui mata pelajaran (Admin)' })
   async updateSubject(
     @Param('id') id: string,
@@ -143,18 +157,21 @@ export class AcademicController {
   // Schedules
   // ---------------------------------------------------------------------------
   @Get('schedules')
+  @Permission('academic.schedules.view')
   @ApiOperation({ summary: 'Daftar jadwal pelajaran aktif' })
   async findAllSchedules(
     @Query('classId') classId?: string,
     @Query('teacherId') teacherId?: string,
     @Query('dayOfWeek') dayOfWeek?: DayOfWeek,
+    @CurrentUser() user?: any,
   ) {
-    const data = await this.academicService.findAllSchedules({ classId, teacherId, dayOfWeek });
+    const data = await this.academicService.findAllSchedules({ classId, teacherId, dayOfWeek }, user);
     return { message: 'Jadwal pelajaran berhasil dimuat', data };
   }
 
   @Post('schedules')
   @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @Permission('academic.schedules.manage')
   @ApiOperation({ summary: 'Tambah jadwal pelajaran (Admin)' })
   async createSchedule(@Body() dto: CreateScheduleDto, @CurrentUser() user: any) {
     const data = await this.academicService.createSchedule(dto, user);
@@ -163,6 +180,7 @@ export class AcademicController {
 
   @Patch('schedules/:id')
   @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @Permission('academic.schedules.manage')
   @ApiOperation({ summary: 'Perbarui jadwal pelajaran (Admin)' })
   async updateSchedule(
     @Param('id') id: string,
@@ -175,6 +193,7 @@ export class AcademicController {
 
   @Delete('schedules/:id')
   @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @Permission('academic.schedules.manage')
   @ApiOperation({ summary: 'Hapus jadwal pelajaran (Admin)' })
   async deleteSchedule(@Param('id') id: string, @CurrentUser() user: any) {
     const result = await this.academicService.deleteSchedule(id, user);

@@ -12,18 +12,21 @@ import { SettingsService } from './settings.service';
 import { UpdateSettingsDto } from './dto/update-settings.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { Permission } from '../../common/decorators/permissions.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Role } from '@prisma/client';
 
 @ApiTags('Pengaturan Sekolah')
 @Controller('settings')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
 @ApiBearerAuth()
 export class SettingsController {
   constructor(private readonly settingsService: SettingsService) {}
 
   @Get()
+  @Permission('settings.view')
   @ApiOperation({ summary: 'Dapatkan konfigurasi pengaturan sekolah aktif' })
   async getSettings() {
     const data = await this.settingsService.getSettings();
@@ -35,6 +38,7 @@ export class SettingsController {
 
   @Patch()
   @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @Permission('settings.manage')
   @ApiOperation({ summary: 'Perbarui konfigurasi pengaturan sekolah (Admin)' })
   @ApiResponse({ status: 200, description: 'Pengaturan berhasil diperbarui' })
   async updateSettings(

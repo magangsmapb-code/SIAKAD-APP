@@ -17,18 +17,21 @@ import { UpdateTeacherDto } from './dto/update-teacher.dto';
 import { QueryTeacherDto } from './dto/query-teacher.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { Permission } from '../../common/decorators/permissions.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Role } from '@prisma/client';
 
 @ApiTags('Data Guru')
 @Controller('teachers')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
 @ApiBearerAuth()
 export class TeachersController {
   constructor(private readonly teachersService: TeachersService) {}
 
   @Get()
+  @Permission('teachers.view')
   @ApiOperation({ summary: 'Daftar data guru dengan pagination, filter, dan search' })
   async findAll(@Query() query: QueryTeacherDto) {
     const result = await this.teachersService.findAll(query);
@@ -40,6 +43,7 @@ export class TeachersController {
   }
 
   @Get(':id')
+  @Permission('teachers.view')
   @ApiOperation({ summary: 'Detail profil guru berdasarkan ID' })
   async findOne(@Param('id') id: string) {
     const teacher = await this.teachersService.findOne(id);
@@ -51,6 +55,7 @@ export class TeachersController {
 
   @Post()
   @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.SCHOOL_ADMIN)
+  @Permission('teachers.manage')
   @ApiOperation({ summary: 'Tambah data guru baru (Hanya Admin)' })
   @ApiResponse({ status: 201, description: 'Guru berhasil ditambahkan' })
   async create(
@@ -70,6 +75,7 @@ export class TeachersController {
 
   @Patch(':id')
   @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.SCHOOL_ADMIN)
+  @Permission('teachers.manage')
   @ApiOperation({ summary: 'Perbarui data guru (Hanya Admin)' })
   async update(
     @Param('id') id: string,

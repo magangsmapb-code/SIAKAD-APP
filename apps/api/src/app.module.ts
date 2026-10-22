@@ -15,6 +15,7 @@ import { ReportsModule } from './modules/reports/reports.module';
 import { UsersModule } from './modules/users/users.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { FeaturesModule } from './modules/features/features.module';
+import { StorageModule } from './modules/storage/storage.module';
 import { AppController } from './app.controller';
 import { validateEnvironment } from './config/env.validation';
 
@@ -49,6 +50,7 @@ import { validateEnvironment } from './config/env.validation';
     UsersModule,
     SettingsModule,
     FeaturesModule,
+    StorageModule,
   ],
   providers: [
     {

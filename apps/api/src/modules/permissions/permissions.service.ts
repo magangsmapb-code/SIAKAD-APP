@@ -23,13 +23,57 @@ export class PermissionsService {
     private storageService: StorageService,
   ) {}
 
+  private async resolveTeacherId(currentUser: any): Promise<string> {
+    if (currentUser.teacherId || currentUser.teacher?.id) {
+      return currentUser.teacherId || currentUser.teacher.id;
+    }
+    const teacher = await this.prisma.teacher.findFirst({
+      where: { userId: currentUser.id },
+      select: { id: true },
+    });
+    if (!teacher) {
+      throw new ForbiddenException('Data profil guru tidak ditemukan untuk akun ini.');
+    }
+    return teacher.id;
+  }
+
+  private async resolveStudentId(currentUser: any): Promise<string> {
+    if (currentUser.studentId || currentUser.student?.id) {
+      return currentUser.studentId || currentUser.student.id;
+    }
+    const student = await this.prisma.student.findFirst({
+      where: { userId: currentUser.id },
+      select: { id: true },
+    });
+    if (!student) {
+      throw new ForbiddenException('Data profil murid tidak ditemukan untuk akun ini.');
+    }
+    return student.id;
+  }
+
   async create(createDto: CreatePermissionDto, currentUser: any, ip?: string, userAgent?: string) {
     let studentId = createDto.studentId;
     let classId: string;
 
     if (currentUser.role === Role.STUDENT) {
-      studentId = currentUser.studentId;
-      classId = currentUser.classId;
+      const myStudentId = await this.resolveStudentId(currentUser);
+      if (createDto.studentId && createDto.studentId !== myStudentId) {
+        throw new ForbiddenException('Akses ditolak: Anda tidak dapat mengajukan izin atas nama siswa lain');
+      }
+      studentId = myStudentId;
+
+      let myClassId = currentUser.classId;
+      if (!myClassId) {
+        const student = await this.prisma.student.findUnique({
+          where: { id: myStudentId },
+          select: { classId: true },
+        });
+        myClassId = student?.classId;
+      }
+      if (!myClassId) {
+        throw new BadRequestException('Siswa belum terdaftar pada rombel kelas aktif.');
+      }
+      classId = myClassId;
     } else {
       if (!studentId) {
         throw new BadRequestException('ID Siswa wajib dicantumkan');
@@ -89,19 +133,30 @@ export class PermissionsService {
 
     const where: any = {};
 
-    if (currentUser.role === Role.STUDENT && currentUser.studentId) {
-      where.studentId = currentUser.studentId;
-    } else if (currentUser.role === Role.TEACHER && currentUser.teacherId) {
-      // Homeroom teachers can view permissions for their class
+    if (currentUser.role === Role.STUDENT) {
+      const studentId = await this.resolveStudentId(currentUser);
+      if (query.studentId && query.studentId !== studentId) {
+        throw new ForbiddenException('Akses ditolak: Anda hanya dapat melihat data izin milik Anda sendiri');
+      }
+      where.studentId = studentId;
+    } else if (currentUser.role === Role.TEACHER) {
+      const teacherId = await this.resolveTeacherId(currentUser);
       where.schoolClass = {
-        homeroomTeacherId: currentUser.teacherId,
+        homeroomTeacherId: teacherId,
       };
+      if (query.classId) {
+        where.classId = query.classId;
+      }
+      if (query.studentId) {
+        where.studentId = query.studentId;
+      }
+    } else {
+      if (query.classId) where.classId = query.classId;
+      if (query.studentId) where.studentId = query.studentId;
     }
 
     if (query.status) where.status = query.status;
     if (query.type) where.type = query.type;
-    if (query.classId) where.classId = query.classId;
-    if (query.studentId) where.studentId = query.studentId;
 
     const [total, permissions] = await Promise.all([
       this.prisma.permissionRequest.count({ where }),
@@ -153,16 +208,21 @@ export class PermissionsService {
       throw new NotFoundException(`Pengajuan izin '${id}' tidak ditemukan`);
     }
 
-    if (currentUser.role === Role.STUDENT && permission.studentId !== currentUser.studentId) {
-      throw new ForbiddenException('Akses ditolak: Anda hanya dapat melihat pengajuan izin milik Anda');
+    if (currentUser.role === Role.STUDENT) {
+      const studentId = await this.resolveStudentId(currentUser);
+      if (permission.studentId !== studentId) {
+        throw new ForbiddenException('Akses ditolak: Anda hanya dapat melihat pengajuan izin milik Anda');
+      }
     }
 
-    if (
-      currentUser.role === Role.TEACHER &&
-      currentUser.teacherId &&
-      permission.schoolClass?.homeroomTeacherId !== currentUser.teacherId
-    ) {
-      throw new ForbiddenException('Akses ditolak: Anda bukan wali kelas dari siswa yang mengajukan izin ini');
+    if (currentUser.role === Role.TEACHER) {
+      const teacherId = await this.resolveTeacherId(currentUser);
+      if (
+        !permission.schoolClass?.homeroomTeacherId ||
+        permission.schoolClass.homeroomTeacherId !== teacherId
+      ) {
+        throw new ForbiddenException('Akses ditolak: Anda bukan wali kelas dari siswa yang mengajukan izin ini');
+      }
     }
 
     let signedAttachmentUrl: string | null = null;
@@ -211,22 +271,25 @@ export class PermissionsService {
       throw new ForbiddenException('Siswa tidak memiliki wewenang untuk menyetujui izin');
     }
 
-    if (
-      currentUser.role === Role.TEACHER &&
-      currentUser.teacherId &&
-      permission.schoolClass?.homeroomTeacherId &&
-      permission.schoolClass.homeroomTeacherId !== currentUser.teacherId
-    ) {
-      throw new ForbiddenException(
-        'Akses ditolak: Hanya wali kelas siswa bersangkutan yang berwenang menyetujui izin ini',
-      );
+    let reviewerTeacherId: string | null = null;
+    if (currentUser.role === Role.TEACHER) {
+      const teacherId = await this.resolveTeacherId(currentUser);
+      if (
+        !permission.schoolClass?.homeroomTeacherId ||
+        permission.schoolClass.homeroomTeacherId !== teacherId
+      ) {
+        throw new ForbiddenException(
+          'Akses ditolak: Hanya wali kelas siswa bersangkutan yang berwenang menyetujui izin ini',
+        );
+      }
+      reviewerTeacherId = teacherId;
     }
 
     const approved = await this.prisma.permissionRequest.update({
       where: { id },
       data: {
         status: PermissionStatus.DISETUJUI,
-        reviewedById: currentUser.teacherId || null,
+        reviewedById: reviewerTeacherId,
         reviewedAt: new Date(),
         reviewNotes: dto.note || 'Pengajuan izin disetujui',
       },
@@ -269,15 +332,18 @@ export class PermissionsService {
       throw new ForbiddenException('Siswa tidak memiliki wewenang untuk menolak izin');
     }
 
-    if (
-      currentUser.role === Role.TEACHER &&
-      currentUser.teacherId &&
-      permission.schoolClass?.homeroomTeacherId &&
-      permission.schoolClass.homeroomTeacherId !== currentUser.teacherId
-    ) {
-      throw new ForbiddenException(
-        'Akses ditolak: Hanya wali kelas siswa bersangkutan yang berwenang menolak izin ini',
-      );
+    let reviewerTeacherId: string | null = null;
+    if (currentUser.role === Role.TEACHER) {
+      const teacherId = await this.resolveTeacherId(currentUser);
+      if (
+        !permission.schoolClass?.homeroomTeacherId ||
+        permission.schoolClass.homeroomTeacherId !== teacherId
+      ) {
+        throw new ForbiddenException(
+          'Akses ditolak: Hanya wali kelas siswa bersangkutan yang berwenang menolak izin ini',
+        );
+      }
+      reviewerTeacherId = teacherId;
     }
 
     const rejected = await this.prisma.permissionRequest.update({

@@ -107,6 +107,7 @@ describe('PermissionsService', () => {
         id: 'perm-1',
         status: PermissionStatus.MENUNGGU,
         student: { fullName: 'Aditya' },
+        schoolClass: { homeroomTeacherId: 't-1' },
       });
 
       prisma.permissionRequest.update.mockResolvedValue({
@@ -127,14 +128,32 @@ describe('PermissionsService', () => {
       );
     });
 
+    it('harus menolak guru jika mencoba menyetujui izin siswa bukan di kelas perwaliannya (IDOR)', async () => {
+      prisma.permissionRequest.findUnique.mockResolvedValue({
+        id: 'perm-1',
+        status: PermissionStatus.MENUNGGU,
+        student: { fullName: 'Aditya' },
+        schoolClass: { homeroomTeacherId: 't-other' },
+      });
+
+      await expect(
+        service.approve(
+          'perm-1',
+          { note: 'Ilegal approval' },
+          { id: 'u-1', role: Role.TEACHER, teacherId: 't-intruder' },
+        ),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
     it('harus menolak persetujuan jika permohonan izin sudah diproses sebelumnya', async () => {
       prisma.permissionRequest.findUnique.mockResolvedValue({
         id: 'perm-1',
         status: PermissionStatus.DISETUJUI,
+        schoolClass: { homeroomTeacherId: 't-1' },
       });
 
       await expect(
-        service.approve('perm-1', {}, { id: 'u-1', role: Role.TEACHER }),
+        service.approve('perm-1', {}, { id: 'u-1', role: Role.TEACHER, teacherId: 't-1' }),
       ).rejects.toThrow(BadRequestException);
     });
   });

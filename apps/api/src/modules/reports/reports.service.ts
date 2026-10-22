@@ -63,8 +63,18 @@ export class ReportsService {
     query: { startDate?: string; endDate?: string },
     currentUser: any,
   ) {
-    if (currentUser.role === Role.STUDENT && currentUser.studentId !== studentId) {
-      throw new ForbiddenException('Akses ditolak: Anda hanya dapat mengakses laporan absensi milik Anda');
+    if (currentUser.role === Role.STUDENT) {
+      let myStudentId = currentUser.studentId;
+      if (!myStudentId) {
+        const student = await this.prisma.student.findFirst({
+          where: { userId: currentUser.id },
+          select: { id: true },
+        });
+        myStudentId = student?.id;
+      }
+      if (myStudentId !== studentId) {
+        throw new ForbiddenException('Akses ditolak: Anda hanya dapat mengakses laporan absensi milik Anda');
+      }
     }
 
     const student = await this.prisma.student.findUnique({
@@ -153,13 +163,21 @@ export class ReportsService {
 
     if (!cls) throw new NotFoundException('Kelas tidak ditemukan');
 
-    if (currentUser.role === Role.TEACHER && currentUser.teacherId) {
-      if (cls.homeroomTeacherId !== currentUser.teacherId) {
-        // Check if teacher has teaching assignment
-        const assignment = await this.prisma.teachingAssignment.findFirst({
-          where: { classId, teacherId: currentUser.teacherId },
+    if (currentUser.role === Role.TEACHER) {
+      let teacherId = currentUser.teacherId;
+      if (!teacherId) {
+        const teacher = await this.prisma.teacher.findFirst({
+          where: { userId: currentUser.id },
+          select: { id: true },
         });
-        if (!assignment && currentUser.role !== Role.ADMIN && currentUser.role !== Role.PRINCIPAL) {
+        teacherId = teacher?.id;
+      }
+
+      if (cls.homeroomTeacherId !== teacherId) {
+        const assignment = await this.prisma.teachingAssignment.findFirst({
+          where: { classId, teacherId },
+        });
+        if (!assignment) {
           throw new ForbiddenException('Akses ditolak: Anda tidak memiliki wewenang untuk kelas ini');
         }
       }
