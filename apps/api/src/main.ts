@@ -28,7 +28,8 @@ async function bootstrap() {
     origin: (origin, callback) => {
       // Allow requests with no origin (such as mobile apps or curl)
       if (!origin) return callback(null, true);
-      if (corsOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
+      const isVercelDomain = /^https:\/\/[a-zA-Z0-9_-]+\.vercel\.app$/.test(origin);
+      if (corsOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production' || isVercelDomain) {
         return callback(null, true);
       }
       return callback(new Error('Akses diblokir oleh kebijakan CORS'));

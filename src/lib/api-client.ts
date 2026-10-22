@@ -58,15 +58,53 @@ function onRefreshed(token: string | null) {
   refreshSubscribers = [];
 }
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
+/**
+ * Resolves API base URL dynamically based on runtime context.
+ *
+ * 1. Server-side (SSR / Server Actions / Route Handlers):
+ *    - Uses `process.env.API_URL` injected by Vercel's multi-service binding for the `api` service.
+ *    - Falls back to `process.env.NEXT_PUBLIC_API_URL` or `http://localhost:4000/api/v1`.
+ * 2. Client-side (Browser):
+ *    - If `process.env.NEXT_PUBLIC_API_URL` is set, uses it.
+ *    - Otherwise uses relative path `/api/v1` to route through Vercel's top-level rewrite.
+ */
+export function resolveApiBaseUrl(): string {
+  if (typeof window === 'undefined') {
+    // Server-side execution (Node.js runtime / Vercel Serverless Function)
+    if (process.env.API_URL) {
+      const boundUrl = process.env.API_URL.replace(/\/$/, '');
+      return boundUrl.endsWith('/api/v1') ? boundUrl : `${boundUrl}/api/v1`;
+    }
+    if (process.env.NEXT_PUBLIC_API_URL) {
+      return process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, '');
+    }
+    return 'http://localhost:4000/api/v1';
+  }
+
+  // Client-side browser execution
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, '');
+  }
+
+  // Same-origin relative path routed via Vercel service rewrite
+  return '/api/v1';
+}
 
 class ApiClient {
-  private baseUrl: string;
+  private customBaseUrl?: string;
   private onUnauthorizedCallback?: () => void;
 
-  constructor(baseUrl: string) {
-    this.baseUrl = baseUrl.replace(/\/$/, '');
+  constructor(customBaseUrl?: string) {
+    if (customBaseUrl) {
+      this.customBaseUrl = customBaseUrl.replace(/\/$/, '');
+    }
+  }
+
+  public getBaseUrl(): string {
+    if (this.customBaseUrl) {
+      return this.customBaseUrl;
+    }
+    return resolveApiBaseUrl();
   }
 
   public setOnUnauthorized(callback: () => void) {
@@ -74,8 +112,9 @@ class ApiClient {
   }
 
   private buildUrl(endpoint: string): string {
+    const base = this.getBaseUrl();
     const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-    return `${this.baseUrl}${cleanEndpoint}`;
+    return `${base}${cleanEndpoint}`;
   }
 
   /**
@@ -284,4 +323,4 @@ class ApiClient {
   }
 }
 
-export const apiClient = new ApiClient(API_BASE_URL);
+export const apiClient = new ApiClient();

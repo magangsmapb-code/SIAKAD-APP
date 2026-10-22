@@ -374,7 +374,7 @@ export function DeveloperDashboardView() {
               <span>Uji Latensi Ping</span>
             </Button>
             <a
-              href="http://localhost:4000/api/v1/docs"
+              href={process.env.NEXT_PUBLIC_API_URL ? `${process.env.NEXT_PUBLIC_API_URL}/docs` : '/api/v1/docs'}
               target="_blank"
               rel="noopener noreferrer"
             >

@@ -147,7 +147,7 @@ export function Sidebar({
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-1.5 font-medium text-foreground">
                 <span className="h-2 w-2 rounded-full bg-[#166534] inline-block" />
-                <span>API Port 4000</span>
+                <span>API REST v1</span>
               </span>
               <Badge variant="hadir" className="text-[10px] px-1.5 py-0 font-semibold">
                 Online
@@ -161,10 +161,10 @@ export function Sidebar({
             </p>
           </div>
         ) : (
-          <div className="flex justify-center" title="API Terhubung (Port 4000)">
+          <div className="flex justify-center" title="API Backend Terhubung">
             <span
               className="h-2.5 w-2.5 rounded-full bg-[#166534]"
-              title="API Terhubung (Port 4000)"
+              title="API Backend Terhubung"
             />
           </div>
         )}
