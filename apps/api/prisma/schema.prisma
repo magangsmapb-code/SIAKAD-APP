@@ -1,0 +1,560 @@
+// Prisma schema for SIAKAD - SMA Pemberdayaan Bangsa Ngrayun, Ponorogo
+// Production Backend Schema (PostgreSQL)
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// -----------------------------------------------------------------------------
+// 1. Enums
+// -----------------------------------------------------------------------------
+
+enum Role {
+  SUPER_ADMIN
+  DEVELOPER
+  ADMIN
+  SCHOOL_ADMIN
+  PRINCIPAL
+  TEACHER
+  STUDENT
+}
+
+enum Gender {
+  L
+  P
+}
+
+enum StudentStatus {
+  AKTIF
+  LULUS
+  MUTASI
+  NON_AKTIF
+}
+
+enum TeacherStatus {
+  AKTIF
+  CUTI
+  NON_AKTIF
+}
+
+enum ClassLevel {
+  X
+  XI
+  XII
+}
+
+enum Major {
+  MIPA
+  IPS
+  UMUM
+}
+
+enum SubjectCategory {
+  WAJIB
+  PEMINATAN
+  MUATAN_LOKAL
+}
+
+enum DayOfWeek {
+  SENIN
+  SELASA
+  RABU
+  KAMIS
+  JUMAT
+  SABTU
+}
+
+enum AttendanceStatus {
+  HADIR
+  TERLAMBAT
+  SAKIT
+  IZIN
+  ALPA
+}
+
+enum AttendanceMethod {
+  MANUAL_TEACHER
+  QR_CODE
+  RFID_CARD
+  FINGERPRINT
+  FACE_RECOGNITION
+  SELF_MOBILE
+}
+
+enum SessionStatus {
+  BELUM_DIMULAI
+  SEDANG_BERLANGSUNG
+  SUDAH_DISIMPAN
+  PERLU_DIPERIKSA
+  DITUTUP
+}
+
+enum PermissionType {
+  SAKIT
+  IZIN
+  DISPENSASI
+}
+
+enum PermissionStatus {
+  MENUNGGU
+  DISETUJUI
+  DITOLAK
+}
+
+enum Semester {
+  GANJIL
+  GENAP
+}
+
+// -----------------------------------------------------------------------------
+// 2. Identity and Access
+// -----------------------------------------------------------------------------
+
+model User {
+  id           String    @id @default(cuid())
+  username     String    @unique
+  email        String?   @unique
+  passwordHash String
+  role         Role      @default(STUDENT)
+  isActive     Boolean   @default(true)
+  refreshToken String?   @db.Text
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  teacher   Teacher?
+  student   Student?
+  auditLogs AuditLog[]
+
+  @@map("users")
+}
+
+model Teacher {
+  id           String        @id @default(cuid())
+  userId       String        @unique
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nip          String        @unique
+  nuptk        String?
+  fullName     String
+  title        String?
+  email        String?
+  phone        String?
+  roleTitle    String?
+  isHomeroom   Boolean       @default(false)
+  status       TeacherStatus @default(AKTIF)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  homeroomClasses     Class[]              @relation("HomeroomTeacher")
+  teachingAssignments TeachingAssignment[]
+  attendanceSessions  AttendanceSession[]  @relation("SessionTeacher")
+  approvedPermissions PermissionRequest[]  @relation("ApprovedTeacher")
+  schedules           Schedule[]
+  attendances         TeacherAttendance[]
+
+  @@map("teachers")
+}
+
+model Student {
+  id           String        @id @default(cuid())
+  userId       String        @unique
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nis          String        @unique
+  nisn         String        @unique
+  fullName     String
+  gender       Gender
+  classId      String
+  currentClass Class         @relation("CurrentClassStudents", fields: [classId], references: [id])
+  phone        String?
+  parentName   String?
+  parentPhone  String?
+  address      String?
+  rfidCardUid  String?       @unique
+  status       StudentStatus @default(AKTIF)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  enrollments        ClassEnrollment[]
+  attendanceRecords  AttendanceRecord[]
+  permissionRequests PermissionRequest[]
+
+  @@index([classId])
+  @@map("students")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  actorName String
+  actorRole String
+  action    String
+  entity    String
+  entityId  String
+  oldValue  Json?
+  newValue  Json?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([entity, entityId])
+  @@index([action])
+  @@map("audit_logs")
+}
+
+// -----------------------------------------------------------------------------
+// 3. Academic Structure
+// -----------------------------------------------------------------------------
+
+model AcademicYear {
+  id        String   @id @default(cuid())
+  name      String   // e.g. "2026/2027"
+  semester  Semester @default(GANJIL)
+  isActive  Boolean  @default(false)
+  startDate DateTime @db.Date
+  endDate   DateTime @db.Date
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  classes             Class[]
+  enrollments         ClassEnrollment[]
+  teachingAssignments TeachingAssignment[]
+
+  @@unique([name, semester])
+  @@map("academic_years")
+}
+
+model Class {
+  id                String     @id @default(cuid())
+  name              String     // e.g. "X MIPA 1"
+  level             ClassLevel
+  major             Major      @default(MIPA)
+  roomNumber        String?    // e.g. "R. 101"
+  academicYearId    String
+  academicYear      AcademicYear @relation(fields: [academicYearId], references: [id])
+  homeroomTeacherId String?
+  homeroomTeacher   Teacher?   @relation("HomeroomTeacher", fields: [homeroomTeacherId], references: [id], onDelete: SetNull)
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  students            Student[]            @relation("CurrentClassStudents")
+  enrollments         ClassEnrollment[]
+  teachingAssignments TeachingAssignment[]
+  schedules           Schedule[]
+  attendanceSessions  AttendanceSession[]
+  permissionRequests  PermissionRequest[]
+
+  @@unique([name, academicYearId])
+  @@index([academicYearId])
+  @@index([homeroomTeacherId])
+  @@map("classes")
+}
+
+model ClassEnrollment {
+  id             String       @id @default(cuid())
+  studentId      String
+  student        Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  classId        String
+  schoolClass    Class        @relation(fields: [classId], references: [id], onDelete: Cascade)
+  academicYearId String
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  status         String       @default("ACTIVE")
+  createdAt      DateTime     @default(now())
+
+  @@unique([studentId, classId, academicYearId])
+  @@index([studentId])
+  @@index([classId])
+  @@map("class_enrollments")
+}
+
+model Subject {
+  id          String          @id @default(cuid())
+  code        String          @unique // e.g. "MTK-X-01"
+  name        String          // e.g. "Matematika Wajib"
+  category    SubjectCategory @default(WAJIB)
+  creditHours Int             @default(2)
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  teachingAssignments TeachingAssignment[]
+  schedules           Schedule[]
+  attendanceSessions  AttendanceSession[]
+
+  @@map("subjects")
+}
+
+model TeachingAssignment {
+  id             String       @id @default(cuid())
+  teacherId      String
+  teacher        Teacher      @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  classId        String
+  schoolClass    Class        @relation(fields: [classId], references: [id], onDelete: Cascade)
+  subjectId      String
+  subject        Subject      @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  academicYearId String
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+
+  @@unique([teacherId, classId, subjectId, academicYearId])
+  @@index([teacherId])
+  @@index([classId])
+  @@index([subjectId])
+  @@map("teaching_assignments")
+}
+
+model Schedule {
+  id             String    @id @default(cuid())
+  classId        String
+  schoolClass    Class     @relation(fields: [classId], references: [id], onDelete: Cascade)
+  subjectId      String
+  subject        Subject   @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  teacherId      String
+  teacher        Teacher   @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  dayOfWeek      DayOfWeek
+  startTime      String    // "07:30"
+  endTime        String    // "09:00"
+  room           String    // "R. 101"
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  attendanceSessions AttendanceSession[]
+
+  @@index([classId])
+  @@index([subjectId])
+  @@index([teacherId])
+  @@index([dayOfWeek])
+  @@map("schedules")
+}
+
+model SchoolSetting {
+  id                        String   @id @default(cuid())
+  schoolName                String   @default("SMA Pemberdayaan Bangsa Ngrayun")
+  npsn                      String   @default("20512345")
+  address                   String   @default("Jl. Raya Ngrayun No. 45, Ponorogo, Jawa Timur 63464")
+  phone                     String   @default("(0352) 123456")
+  email                     String   @default("info@smapbngrayun.sch.id")
+  minAttendancePercentage   Float    @default(90.0)
+  timezone                  String   @default("Asia/Jakarta")
+  allowSelfPermission       Boolean  @default(true)
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  @@map("school_settings")
+}
+
+// -----------------------------------------------------------------------------
+// 4. Attendance & Permissions
+// -----------------------------------------------------------------------------
+
+model AttendanceSession {
+  id          String        @id @default(cuid())
+  classId     String
+  schoolClass Class         @relation(fields: [classId], references: [id], onDelete: Cascade)
+  subjectId   String
+  subject     Subject       @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  teacherId   String
+  teacher     Teacher       @relation("SessionTeacher", fields: [teacherId], references: [id], onDelete: Cascade)
+  scheduleId  String?
+  schedule    Schedule?     @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+  date        DateTime      @db.Date
+  startTime   String        // "07:30"
+  endTime     String        // "09:00"
+  room        String        // "R. 101"
+  status      SessionStatus @default(SEDANG_BERLANGSUNG)
+  notes       String?
+  createdById String
+  closedAt    DateTime?
+  closedById  String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  records     AttendanceRecord[]
+  corrections AttendanceCorrection[]
+
+  @@index([classId, date])
+  @@index([teacherId, date])
+  @@index([status])
+  @@map("attendance_sessions")
+}
+
+model AttendanceRecord {
+  id          String           @id @default(cuid())
+  sessionId   String
+  session     AttendanceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  studentId   String
+  student     Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  status      AttendanceStatus @default(HADIR)
+  checkInTime DateTime?
+  method      AttendanceMethod @default(MANUAL_TEACHER)
+  notes       String?
+  recordedAt  DateTime         @default(now())
+  recordedById String?
+  updatedAt   DateTime         @updatedAt
+
+  corrections AttendanceCorrection[]
+
+  @@unique([sessionId, studentId])
+  @@index([sessionId])
+  @@index([studentId])
+  @@index([status])
+  @@map("attendance_records")
+}
+
+model AttendanceCorrection {
+  id             String           @id @default(cuid())
+  recordId       String
+  record         AttendanceRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  sessionId      String
+  session        AttendanceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  studentId      String
+  previousStatus AttendanceStatus
+  newStatus      AttendanceStatus
+  reason         String
+  correctedById  String
+  status         PermissionStatus @default(MENUNGGU)
+  reviewedById   String?
+  reviewedAt     DateTime?
+  reviewNotes    String?
+  createdAt      DateTime         @default(now())
+
+  @@index([recordId])
+  @@index([sessionId])
+  @@index([status])
+  @@map("attendance_corrections")
+}
+
+model TeacherAttendance {
+  id             String           @id @default(cuid())
+  teacherId      String
+  teacher        Teacher          @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  date           DateTime         @db.Date
+  checkInTime    DateTime
+  checkOutTime   DateTime?
+  status         AttendanceStatus @default(HADIR)
+  method         AttendanceMethod @default(MANUAL_TEACHER)
+  latitude       Float?
+  longitude      Float?
+  distanceMeters Float?
+  notes          String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@unique([teacherId, date])
+  @@index([teacherId])
+  @@index([date])
+  @@map("teacher_attendances")
+}
+
+model AttendanceConfig {
+  id                       String   @id @default(cuid())
+  checkInStartTime         String   @default("06:30")
+  checkInEndTime           String   @default("07:30")
+  lateThresholdTime        String   @default("07:00")
+  lateToleranceMinutes     Int      @default(15)
+  checkOutStartTime        String   @default("14:00")
+  checkOutEndTime          String   @default("16:00")
+  enableGps                Boolean  @default(false)
+  schoolLatitude           Float    @default(-8.0435)
+  schoolLongitude          Float    @default(111.4123)
+  maxGpsRadiusMeters       Int      @default(100)
+  allowedMethods           String   @default("[\"MANUAL_TEACHER\",\"QR_CODE\",\"RFID_CARD\",\"FACE_RECOGNITION\",\"SELF_MOBILE\"]")
+  allowStudentSelfCheckIn  Boolean  @default(false)
+  allowTeacherSelfCheckIn  Boolean  @default(true)
+  requirePhotoVerification Boolean  @default(false)
+  requireCorrectionApproval Boolean @default(true)
+  correctionApproverRole   String   @default("TEACHER_HOMEROOM")
+  maintenanceMode          Boolean  @default(false)
+  maintenanceMessage       String?
+  updatedById              String?
+  updatedByName            String?
+  updatedAt                DateTime @updatedAt
+  createdAt                DateTime @default(now())
+
+  @@map("attendance_configs")
+}
+
+model PermissionRequest {
+  id             String           @id @default(cuid())
+  studentId      String
+  student        Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  classId        String
+  schoolClass    Class            @relation(fields: [classId], references: [id], onDelete: Cascade)
+  type           PermissionType   @default(IZIN)
+  startDate      DateTime         @db.Date
+  endDate        DateTime         @db.Date
+  totalDays      Int              @default(1)
+  reason         String
+  attachmentName String?
+  attachmentUrl  String?
+  status         PermissionStatus @default(MENUNGGU)
+  reviewedById   String?
+  reviewedBy     Teacher?         @relation("ApprovedTeacher", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt     DateTime?
+  reviewNotes    String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([studentId])
+  @@index([classId])
+  @@index([status])
+  @@map("permission_requests")
+}
+
+// -----------------------------------------------------------------------------
+// 5. Feature Registry & Developer Governance
+// -----------------------------------------------------------------------------
+
+enum FeatureImplementationStatus {
+  IMPLEMENTED
+  IN_PROGRESS
+  NOT_IMPLEMENTED
+}
+
+enum FeatureMaintenanceStatus {
+  ACTIVE
+  MAINTENANCE
+}
+
+model FeatureRegistry {
+  key                  String                      @id
+  name                 String
+  description          String
+  category             String
+  route                String
+  implementationStatus FeatureImplementationStatus @default(IMPLEMENTED)
+  isEnabled            Boolean                     @default(true)
+  maintenanceStatus    FeatureMaintenanceStatus    @default(ACTIVE)
+  maintenanceMessage   String?
+  requiredPermissions  String[]
+  dependencies         String[]
+  updatedById          String?
+  updatedByName        String?
+  lastChangedAt        DateTime                    @default(now())
+  changeNotes          String?
+  createdAt            DateTime                    @default(now())
+  updatedAt            DateTime                    @updatedAt
+
+  @@map("feature_registries")
+}
+
+model RolePermission {
+  id           String   @id @default(cuid())
+  role         Role
+  permissionKey String
+  enabled      Boolean  @default(false)
+  updatedById  String?
+  updatedAt    DateTime @updatedAt
+  createdAt    DateTime @default(now())
+
+  @@unique([role, permissionKey])
+  @@index([permissionKey])
+  @@map("role_permissions")
+}

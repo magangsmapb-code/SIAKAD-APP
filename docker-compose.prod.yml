@@ -1,0 +1,177 @@
+version: '3.8'
+
+# ==============================================================================
+# Production Docker Compose for SIAKAD SMA Pemberdayaan Bangsa Ngrayun
+# Architecture: Next.js Web + NestJS API + PostgreSQL + Nginx SSL + Auto-Backup
+# ==============================================================================
+
+networks:
+  siakad_internal:
+    internal: true
+    driver: bridge
+  siakad_edge:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  backup_data:
+    driver: local
+  certbot_conf:
+    driver: local
+  certbot_www:
+    driver: local
+  private_storage:
+    driver: local
+
+services:
+  # ---------------------------------------------------------------------------
+  # 1. Database - PostgreSQL 16 (Isolated Internal Network, No Host Port Mapping)
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: siakad_prod_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-siakad_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Error: POSTGRES_PASSWORD must be set in .env.production}
+      POSTGRES_DB: ${POSTGRES_DB:-siakad_prod_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - siakad_internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1024M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  # ---------------------------------------------------------------------------
+  # 2. Backend API - NestJS 10 Application
+  # ---------------------------------------------------------------------------
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    container_name: siakad_prod_api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      APP_TIMEZONE: Asia/Jakarta
+      DATABASE_URL: postgresql://${POSTGRES_USER:-siakad_admin}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-siakad_prod_db}?schema=public&sslmode=prefer
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?Error: JWT_ACCESS_SECRET must be set}
+      JWT_ACCESS_EXPIRES_IN: ${JWT_ACCESS_EXPIRES_IN:-15m}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?Error: JWT_REFRESH_SECRET must be set}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://siakad.smapemberdayaanbangsa.sch.id,https://api-siakad.smapemberdayaanbangsa.sch.id}
+      THROTTLE_TTL: ${THROTTLE_TTL:-60000}
+      THROTTLE_LIMIT: ${THROTTLE_LIMIT:-100}
+    volumes:
+      - private_storage:/app/storage/private
+    networks:
+      - siakad_internal
+      - siakad_edge
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 768M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  # ---------------------------------------------------------------------------
+  # 3. Web Frontend - Next.js 15 Standalone
+  # ---------------------------------------------------------------------------
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api-siakad.smapemberdayaanbangsa.sch.id/api/v1}
+    container_name: siakad_prod_web
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+    networks:
+      - siakad_edge
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.2'
+          memory: 128M
+
+  # ---------------------------------------------------------------------------
+  # 4. Reverse Proxy - Nginx with TLS Termination & Security Rate Limiting
+  # ---------------------------------------------------------------------------
+  nginx:
+    image: nginx:alpine
+    container_name: siakad_prod_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - certbot_conf:/etc/letsencrypt:ro
+      - certbot_www:/var/www/certbot:ro
+    depends_on:
+      - web
+      - api
+    networks:
+      - siakad_edge
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+
+  # ---------------------------------------------------------------------------
+  # 5. Automated Database Backup Service (Daily Cron with 7-Day Retention)
+  # ---------------------------------------------------------------------------
+  backup-cron:
+    image: postgres:16-alpine
+    container_name: siakad_prod_backup
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGHOST: postgres
+      PGPORT: 5432
+      PGUSER: ${POSTGRES_USER:-siakad_admin}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB:-siakad_prod_db}
+      BACKUP_DIR: /backups
+      RETENTION_DAYS: 7
+    volumes:
+      - backup_data:/backups
+      - ./scripts/docker_backup_cron.sh:/usr/local/bin/docker_backup_cron.sh:ro
+    entrypoint: ["/bin/sh", "/usr/local/bin/docker_backup_cron.sh"]
+    networks:
+      - siakad_internal
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M

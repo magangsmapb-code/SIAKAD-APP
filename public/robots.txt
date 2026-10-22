@@ -1,0 +1,3 @@
+# Disallow search engine indexing of private school portal
+User-agent: *
+Disallow: /

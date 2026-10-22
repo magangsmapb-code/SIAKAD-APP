@@ -1,0 +1,11 @@
+# Production Keystore Configuration Template
+# COPY this file to 'key.properties' in the same directory (android/key.properties)
+# WARNING: NEVER commit your actual 'key.properties' or '.jks' keystore file to Git!
+#
+# To generate a production keystore, run:
+# keytool -genkey -v -keystore siakad-release.jks -keyalg RSA -keysize 2048 -validity 10000 -alias siakad
+#
+storePassword=<SECURE_KEYSTORE_PASSWORD>
+keyPassword=<SECURE_KEY_PASSWORD>
+keyAlias=siakad
+storeFile=../siakad-release.jks
