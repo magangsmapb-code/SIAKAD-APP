@@ -183,7 +183,7 @@ export const MAIN_NAVIGATION: { group: string; items: NavItem[] }[] = [
         title: "Pengaturan",
         href: "/settings",
         icon: Settings,
-        roles: ["ADMIN", "GURU", "KEPALA_SEKOLAH", "SISWA"],
+        roles: ["ADMIN"],
       },
     ],
   },

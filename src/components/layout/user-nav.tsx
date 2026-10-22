@@ -96,37 +96,40 @@ export function UserNav() {
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
 
-          {/* Demo Role Switcher Submenu */}
-          <div className="px-2 py-1.5">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5 flex items-center gap-1">
-              <Sparkles className="h-3 w-3 text-amber-500" />
-              <span>Ganti Akun Demo:</span>
-            </p>
-            <div className="grid grid-cols-2 gap-1 text-[11px]">
-              {(["ADMIN", "GURU", "KEPALA_SEKOLAH", "SISWA"] as DemoRoleType[]).map((r) => {
-                const u = DEMO_USERS[r];
-                const isSelected = role === r;
-                return (
-                  <button
-                    key={r}
-                    onClick={() => setRole(r)}
-                    className={`flex items-center gap-1.5 p-1.5 rounded-md text-left transition-colors ${
-                      isSelected
-                        ? "bg-primary text-primary-foreground font-semibold"
-                        : "hover:bg-muted text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    <span className="text-xs">
-                      {r === "ADMIN" ? "🛡️" : r === "GURU" ? "👨‍🏫" : r === "KEPALA_SEKOLAH" ? "🏫" : "🎒"}
-                    </span>
-                    <span className="truncate">{r === "KEPALA_SEKOLAH" ? "Kepsek" : u.roleLabel.split("/")[0].trim()}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <DropdownMenuSeparator />
+          {/* Demo Role Switcher Submenu (Super Admin only) */}
+          {(user?.role === "SUPER_ADMIN" || user?.role === "DEVELOPER") && (
+            <>
+              <div className="px-2 py-1.5">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5 flex items-center gap-1">
+                  <Sparkles className="h-3 w-3 text-amber-500" />
+                  <span>Simulasi Peran:</span>
+                </p>
+                <div className="grid grid-cols-2 gap-1 text-[11px]">
+                  {(["ADMIN", "GURU", "KEPALA_SEKOLAH", "SISWA"] as DemoRoleType[]).map((r) => {
+                    const u = DEMO_USERS[r];
+                    const isSelected = role === r;
+                    return (
+                      <button
+                        key={r}
+                        onClick={() => setRole(r)}
+                        className={`flex items-center gap-1.5 p-1.5 rounded-md text-left transition-colors ${
+                          isSelected
+                            ? "bg-primary text-primary-foreground font-semibold"
+                            : "hover:bg-muted text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        <span className="text-xs">
+                          {r === "ADMIN" ? "🛡️" : r === "GURU" ? "👨‍🏫" : r === "KEPALA_SEKOLAH" ? "🏫" : "🎒"}
+                        </span>
+                        <span className="truncate">{r === "KEPALA_SEKOLAH" ? "Kepsek" : u.roleLabel.split("/")[0].trim()}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <DropdownMenuSeparator />
+            </>
+          )}
           <DropdownMenuGroup>
             <DropdownMenuItem
               className="cursor-pointer gap-2 text-xs"

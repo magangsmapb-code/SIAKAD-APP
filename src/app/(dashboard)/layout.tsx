@@ -1,12 +1,57 @@
 "use client";
 
 import * as React from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { ShieldAlert } from "lucide-react";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import { Footer } from "@/components/layout/footer";
-import { DemoRoleProvider } from "@/contexts/demo-role-context";
+import { DemoRoleProvider, useDemoRole } from "@/contexts/demo-role-context";
 import { SchoolDataProvider } from "@/contexts/school-data-context";
 import { useAuth } from "@/contexts/auth-context";
+import { MAIN_NAVIGATION } from "@/lib/constants";
+import { Button } from "@/components/ui/button";
+
+function RouteGuard({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const { role, currentUser } = useDemoRole();
+
+  const matchingItem = React.useMemo(() => {
+    const allItems = MAIN_NAVIGATION.flatMap((s) => s.items);
+    return allItems.find(
+      (item) => pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))
+    );
+  }, [pathname]);
+
+  const isAllowed = React.useMemo(() => {
+    if (!matchingItem || !matchingItem.roles) return true;
+    return matchingItem.roles.includes(role);
+  }, [matchingItem, role]);
+
+  if (!isAllowed) {
+    return (
+      <div className="flex min-h-[60vh] flex-col items-center justify-center text-center p-6 space-y-4">
+        <div className="h-16 w-16 rounded-full bg-destructive/10 text-destructive flex items-center justify-center">
+          <ShieldAlert className="h-8 w-8" />
+        </div>
+        <div className="space-y-1.5 max-w-md">
+          <h2 className="text-xl font-bold tracking-tight text-foreground">
+            Akses Ditolak (403 Forbidden)
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            Akun Anda dengan peran <strong>{currentUser.roleLabel}</strong> tidak memiliki wewenang untuk membuka halaman ini ({pathname}).
+          </p>
+        </div>
+        <Button onClick={() => router.push("/dashboard")} className="gap-2">
+          Kembali ke Dashboard
+        </Button>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+}
 
 export default function DashboardLayout({
   children,
@@ -48,7 +93,7 @@ export default function DashboardLayout({
           <div className="flex flex-1 flex-col min-w-0">
             <Topbar />
             <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto animate-in fade-in-50 duration-200">
-              {children}
+              <RouteGuard>{children}</RouteGuard>
             </main>
             <Footer />
           </div>

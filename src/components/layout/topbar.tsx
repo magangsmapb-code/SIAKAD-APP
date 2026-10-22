@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useMounted } from "@/hooks/use-mounted";
 import { useDemoRole } from "@/contexts/demo-role-context";
+import { useAuth } from "@/contexts/auth-context";
 import { ACADEMIC_YEARS, DemoRoleType, DEMO_USERS } from "@/lib/constants";
 import { toast } from "sonner";
 
@@ -47,6 +48,7 @@ export function Topbar({ className = "" }: TopbarProps) {
   const pathname = usePathname();
   const mounted = useMounted();
   const { role, setRole, academicYear, setAcademicYear } = useDemoRole();
+  const { user } = useAuth();
   const [currentDateTime, setCurrentDateTime] = React.useState<string>("");
   const [searchOpen, setSearchOpen] = React.useState(false);
 
@@ -186,59 +188,73 @@ export function Topbar({ className = "" }: TopbarProps) {
             </span>
           </div>
 
-          {/* Demo Role Switcher Quick Pill */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-9 gap-1.5 text-xs bg-primary/5 hover:bg-primary/10 border-primary/30 text-primary font-semibold px-2.5 sm:px-3"
-              >
-                <Sparkles className="h-3.5 w-3.5 text-amber-500 animate-spin-slow shrink-0" />
-                <span className="truncate max-w-[85px] sm:max-w-none">
-                  {role === "ADMIN"
-                    ? "🛡️ Admin"
-                    : role === "GURU"
-                    ? "👨‍🏫 Guru"
-                    : role === "KEPALA_SEKOLAH"
-                    ? "🏫 Kepsek"
-                    : "🎒 Siswa"}
-                </span>
-                <ChevronDown className="h-3 w-3 opacity-60 shrink-0" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 p-2 text-xs">
-              <DropdownMenuLabel className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
-                Simulasi Peran Pengguna
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {(["ADMIN", "GURU", "KEPALA_SEKOLAH", "SISWA"] as DemoRoleType[]).map((r) => {
-                const u = DEMO_USERS[r];
-                const isSelected = role === r;
-                return (
-                  <DropdownMenuItem
-                    key={r}
-                    onClick={() => handleRoleChange(r)}
-                    className={`flex items-start gap-2 p-2 cursor-pointer rounded-md ${
-                      isSelected
-                        ? "bg-primary text-primary-foreground font-semibold"
-                        : "hover:bg-muted"
-                    }`}
-                  >
-                    <span className="text-base">
-                      {r === "ADMIN" ? "🛡️" : r === "GURU" ? "👨‍🏫" : r === "KEPALA_SEKOLAH" ? "🏫" : "🎒"}
-                    </span>
-                    <div className="flex-1 overflow-hidden">
-                      <p className="leading-tight font-semibold truncate">{u.name}</p>
-                      <p className={`text-[10px] leading-tight truncate ${isSelected ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
-                        {u.roleLabel}
-                      </p>
-                    </div>
-                  </DropdownMenuItem>
-                );
-              })}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* Role Display / Switcher */}
+          {user?.role === "SUPER_ADMIN" || user?.role === "DEVELOPER" ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-9 gap-1.5 text-xs bg-primary/5 hover:bg-primary/10 border-primary/30 text-primary font-semibold px-2.5 sm:px-3"
+                >
+                  <Sparkles className="h-3.5 w-3.5 text-amber-500 animate-spin-slow shrink-0" />
+                  <span className="truncate max-w-[85px] sm:max-w-none">
+                    {role === "ADMIN"
+                      ? "🛡️ Admin"
+                      : role === "GURU"
+                      ? "👨‍🏫 Guru"
+                      : role === "KEPALA_SEKOLAH"
+                      ? "🏫 Kepsek"
+                      : "🎒 Siswa"}
+                  </span>
+                  <ChevronDown className="h-3 w-3 opacity-60 shrink-0" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 p-2 text-xs">
+                <DropdownMenuLabel className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
+                  Simulasi Peran Pengguna
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {(["ADMIN", "GURU", "KEPALA_SEKOLAH", "SISWA"] as DemoRoleType[]).map((r) => {
+                  const u = DEMO_USERS[r];
+                  const isSelected = role === r;
+                  return (
+                    <DropdownMenuItem
+                      key={r}
+                      onClick={() => handleRoleChange(r)}
+                      className={`flex items-start gap-2 p-2 cursor-pointer rounded-md ${
+                        isSelected
+                          ? "bg-primary text-primary-foreground font-semibold"
+                          : "hover:bg-muted"
+                      }`}
+                    >
+                      <span className="text-base">
+                        {r === "ADMIN" ? "🛡️" : r === "GURU" ? "👨‍🏫" : r === "KEPALA_SEKOLAH" ? "🏫" : "🎒"}
+                      </span>
+                      <div className="flex-1 overflow-hidden">
+                        <p className="leading-tight font-semibold truncate">{u.name}</p>
+                        <p className={`text-[10px] leading-tight truncate ${isSelected ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
+                          {u.roleLabel}
+                        </p>
+                      </div>
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <div className="flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-2.5 sm:px-3 py-1 text-xs text-primary font-semibold select-none">
+              <span>
+                {role === "ADMIN"
+                  ? "🛡️ Admin"
+                  : role === "GURU"
+                  ? "👨‍🏫 Guru"
+                  : role === "KEPALA_SEKOLAH"
+                  ? "🏫 Kepsek"
+                  : "🎒 Siswa"}
+              </span>
+            </div>
+          )}
 
           {/* Notifications Dropdown */}
           <DropdownMenu>
