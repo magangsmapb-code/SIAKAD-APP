@@ -58,8 +58,14 @@ export class PermissionsController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Detail pengajuan izin berdasarkan ID' })
-  async findOne(@Param('id') id: string, @CurrentUser() user: any) {
-    const result = await this.permissionsService.findOne(id, user);
+  async findOne(
+    @Param('id') id: string,
+    @CurrentUser() user: any,
+    @Req() req: Request,
+  ) {
+    const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
+    const userAgent = req.headers['user-agent'] || 'Unknown';
+    const result = await this.permissionsService.findOne(id, user, ip, userAgent);
     return {
       message: 'Detail izin berhasil dimuat',
       data: result,

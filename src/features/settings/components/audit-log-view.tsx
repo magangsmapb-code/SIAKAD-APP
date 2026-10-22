@@ -53,92 +53,10 @@ export interface AuditLogItem {
   createdAt: string;
 }
 
-const INITIAL_MOCK_LOGS: AuditLogItem[] = [
-  {
-    id: "log-1",
-    actorName: "Siti Rahmawati, S.Pd.",
-    actorRole: "ADMIN",
-    action: "CREATE_SESSION",
-    entity: "ATTENDANCE_SESSION",
-    entityId: "sess-20261019-xi-mipa1",
-    newValue: {
-      className: "XI MIPA 1",
-      subject: "Matematika Peminatan",
-      date: "2026-10-19",
-      sessionTime: "07:30 - 09:00",
-    },
-    ipAddress: "192.168.1.15",
-    createdAt: new Date(Date.now() - 1000 * 60 * 12).toISOString(),
-  },
-  {
-    id: "log-2",
-    actorName: "Ahmad Dahlan, S.Pd.",
-    actorRole: "GURU",
-    action: "SUBMIT_ATTENDANCE",
-    entity: "ATTENDANCE_RECORD",
-    entityId: "rec-x-mipa1-oct19",
-    newValue: {
-      hadir: 31,
-      terlambat: 1,
-      izin: 1,
-      sakit: 1,
-      alpa: 0,
-      total: 34,
-    },
-    ipAddress: "192.168.1.28",
-    createdAt: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
-  },
-  {
-    id: "log-3",
-    actorName: "Drs. Bambang Setyono, M.Pd.",
-    actorRole: "KEPALA_SEKOLAH",
-    action: "APPROVE_PERMISSION",
-    entity: "PERMISSION_REQUEST",
-    entityId: "perm-240108-osn",
-    oldValue: { status: "MENUNGGU" },
-    newValue: { status: "DISETUJUI", reviewer: "Drs. Bambang Setyono, M.Pd." },
-    ipAddress: "192.168.1.10",
-    createdAt: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
-  },
-  {
-    id: "log-4",
-    actorName: "Budi Santoso, S.Kom",
-    actorRole: "ADMIN",
-    action: "UPDATE_SETTINGS",
-    entity: "SCHOOL_SETTINGS",
-    entityId: "cfg-smapb-ngrayun",
-    oldValue: { lateLimit: "07:10" },
-    newValue: { lateLimit: "07:15", reason: "Penyesuaian angkutan pedesaan Ngrayun" },
-    ipAddress: "192.168.1.15",
-    createdAt: new Date(Date.now() - 1000 * 60 * 360).toISOString(),
-  },
-  {
-    id: "log-5",
-    actorName: "Sistem Gateway RFID",
-    actorRole: "SYSTEM",
-    action: "BATCH_SYNC",
-    entity: "RFID_LOG",
-    entityId: "batch-gate-utama-174",
-    newValue: { totalLogs: 174, successful: 174, machineId: "KIOSK-GATE-1" },
-    ipAddress: "192.168.1.100",
-    createdAt: new Date(Date.now() - 1000 * 60 * 420).toISOString(),
-  },
-  {
-    id: "log-6",
-    actorName: "Siti Rahmawati, S.Pd.",
-    actorRole: "ADMIN",
-    action: "CREATE_STUDENT",
-    entity: "STUDENT",
-    entityId: "std-20241021",
-    newValue: { nis: "240121", name: "Rina Kusuma Astuti", class: "X MIPA 2" },
-    ipAddress: "192.168.1.15",
-    createdAt: new Date(Date.now() - 1000 * 60 * 1440).toISOString(),
-  },
-];
-
 export function AuditLogView() {
-  const [logs, setLogs] = React.useState<AuditLogItem[]>(INITIAL_MOCK_LOGS);
-  const [loading, setLoading] = React.useState(false);
+  const [logs, setLogs] = React.useState<AuditLogItem[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
   const [search, setSearch] = React.useState("");
   const [entityFilter, setEntityFilter] = React.useState("ALL");
   const [actionFilter, setActionFilter] = React.useState("ALL");
@@ -149,17 +67,21 @@ export function AuditLogView() {
 
   const fetchAuditLogs = React.useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await apiClient.get<any>("/audit-logs");
-      if (res.data?.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
+      if (res.data?.data && Array.isArray(res.data.data)) {
         setLogs(res.data.data);
+      } else if (Array.isArray(res.data)) {
+        setLogs(res.data);
       } else {
-        // Retain initial seeded logs if database returns empty
-        setLogs(INITIAL_MOCK_LOGS);
+        setLogs([]);
       }
-    } catch {
-      // Fallback silently to client seeded audit logs
-      setLogs(INITIAL_MOCK_LOGS);
+    } catch (err: any) {
+      const msg = err.message || "Gagal memuat log audit dari database Supabase";
+      setError(msg);
+      setLogs([]);
+      toast.error("Gagal Memuat Log Audit", { description: msg });
     } finally {
       setLoading(false);
     }
@@ -356,17 +278,42 @@ export function AuditLogView() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          {filteredLogs.length === 0 ? (
+          {loading ? (
+            <div className="p-12 text-center text-xs text-muted-foreground flex flex-col items-center justify-center gap-2">
+              <RefreshCw className="h-5 w-5 animate-spin text-primary" />
+              <span>Memuat jejak audit dari database Supabase...</span>
+            </div>
+          ) : error ? (
+            <div className="p-8">
+              <EmptyState
+                icon={AlertCircle}
+                title="Gagal Memuat Log Audit"
+                description={error}
+                actionLabel="Coba Lagi"
+                onAction={fetchAuditLogs}
+              />
+            </div>
+          ) : filteredLogs.length === 0 ? (
             <div className="p-8">
               <EmptyState
                 icon={Database}
                 title="Tidak Ada Log Ditemukan"
-                description="Tidak ada catatan audit yang cocok dengan filter atau kata kunci yang dipilih."
-                actionLabel="Reset Filter"
+                description={
+                  search || entityFilter !== "ALL" || actionFilter !== "ALL"
+                    ? "Tidak ada catatan audit yang cocok dengan filter atau kata kunci yang dipilih."
+                    : "Belum ada jejak audit tersimpan di database Supabase."
+                }
+                actionLabel={
+                  search || entityFilter !== "ALL" || actionFilter !== "ALL" ? "Reset Filter" : "Muat Ulang"
+                }
                 onAction={() => {
-                  setSearch("");
-                  setEntityFilter("ALL");
-                  setActionFilter("ALL");
+                  if (search || entityFilter !== "ALL" || actionFilter !== "ALL") {
+                    setSearch("");
+                    setEntityFilter("ALL");
+                    setActionFilter("ALL");
+                  } else {
+                    fetchAuditLogs();
+                  }
                 }}
               />
             </div>

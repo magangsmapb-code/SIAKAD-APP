@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PermissionsService } from './permissions.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { StorageService } from '../storage/storage.service';
 import { ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PermissionStatus, Role } from '@prisma/client';
 
@@ -9,6 +10,7 @@ describe('PermissionsService', () => {
   let service: PermissionsService;
   let prisma: any;
   let auditService: any;
+  let storageService: any;
 
   beforeEach(async () => {
     prisma = {
@@ -28,11 +30,18 @@ describe('PermissionsService', () => {
       record: jest.fn().mockResolvedValue(true),
     };
 
+    storageService = {
+      getSignedUrl: jest.fn().mockResolvedValue('https://aymuesprbohoznguuyym.supabase.co/storage/v1/object/sign/siakad-permissions/permissions/test.png?token=mock'),
+      uploadFile: jest.fn(),
+      deleteFile: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PermissionsService,
         { provide: PrismaService, useValue: prisma },
         { provide: AuditService, useValue: auditService },
+        { provide: StorageService, useValue: storageService },
       ],
     }).compile();
 
@@ -67,6 +76,28 @@ describe('PermissionsService', () => {
           teacherId: 'teacher-intruder',
         }),
       ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('harus menghasilkan signed URL Supabase Storage dan mencatat audit log saat melihat detail izin berlampiran', async () => {
+      prisma.permissionRequest.findUnique.mockResolvedValue({
+        id: 'perm-1',
+        studentId: 'student-1',
+        attachmentUrl: 'permissions/2025-2026/uuid-test.png',
+        schoolClass: { homeroomTeacherId: 't-1' },
+      });
+
+      const res = await service.findOne(
+        'perm-1',
+        { id: 'u-1', role: Role.TEACHER, teacherId: 't-1', fullName: 'Budi' },
+        '127.0.0.1',
+        'Jest/Test',
+      );
+
+      expect(storageService.getSignedUrl).toHaveBeenCalledWith('permissions/2025-2026/uuid-test.png', 900);
+      expect(res.signedAttachmentUrl).toBeDefined();
+      expect(auditService.record).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'PERMISSION_ATTACHMENT_ACCESSED' }),
+      );
     });
   });
 

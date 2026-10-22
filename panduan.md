@@ -204,13 +204,13 @@ Status berikut menilai kode dan wiring yang ditemukan, bukan UAT production:
 | Dashboard, laporan, ekspor | `PARTIALLY_IMPLEMENTED` | Endpoint dan komponen web memakai API; beberapa tampilan mengandung data statis/mock |
 | Developer Dashboard, Feature Registry dan matriks permission | `IMPLEMENTED` untuk operasi registry dasar | Endpoint baca/ubah, pengecekan dependency, larangan aktivasi `NOT_IMPLEMENTED`, dan audit perubahan tersedia; validasi tiap kontrol dan dampak runtime tetap wajib |
 | Presensi RFID | `MOCK` / simulator | Kode registry menyebut simulator; tidak ditemukan driver/perangkat RFID fisik terintegrasi |
-| Lampiran surat izin | `PARTIALLY_IMPLEMENTED` | Schema menyimpan metadata/nama/URL; tidak ditemukan object-storage upload privat yang lengkap |
+| Lampiran surat izin | `IMPLEMENTED` | Terintegrasi penuh dengan Supabase Storage privat (bucket `siakad-permissions`), upload aman (max 2MB, PDF/JPG/PNG), signed URL 15 menit, dan audit log |
 | Flutter | `PARTIALLY_IMPLEMENTED` | Mode API dan repository offline/cache tersedia, tetapi API Android/UAT/perangkat belum divalidasi dalam audit |
 | Mode demo web/mobile | `MOCK` | Web memakai role/data demo; Flutter memiliki repository mock saat `DEMO_MODE=true` |
 | CBT/ujian dan nilai/rapor | `NOT_IMPLEMENTED` | Feature Registry menyatakan belum ada; jangan aktifkan |
 | Payment gateway/SPP | `NOT_IMPLEMENTED` | Tidak ditemukan integrasi pembayaran |
 | WhatsApp gateway | `NOT_IMPLEMENTED` | Tidak ditemukan integrasi provider |
-| Object storage S3/MinIO | `BLOCKED` | Memerlukan layanan privat, credential, upload/download aman dan kebijakan retensi |
+| Object storage lampiran (Supabase Storage) | `IMPLEMENTED` | Bucket privat `siakad-permissions` di Supabase Cloud (`ap-northeast-2`) terhubung aman via service role key backend |
 | RFID hardware sekolah | `BLOCKED` | Membutuhkan pilihan/perangkat, driver/protokol dan uji fisik |
 
 ### 1.7 Mode demo, cache, dan API
@@ -946,7 +946,7 @@ Feature Registry berisi status implementasi, dependency, `isEnabled`, maintenanc
 | Ujian/penilaian/rapor | `NOT_IMPLEMENTED` | Registry `feat_grading_examination` | Model, API, UI, permission, audit | Aktivasi palsu/hasil akademik tidak sah | Tetap nonaktif; desain dan bangun setelah persetujuan |
 | Payment gateway/SPP | `NOT_IMPLEMENTED` | Registry `feat_tu_payment_gateway` | Provider, webhook, rekonsiliasi, keamanan finansial | Pembayaran tidak dapat diproses | Pilih provider/legalitas dan rancang idempotensi |
 | WhatsApp | `NOT_IMPLEMENTED` | Registry `feat_notification_whatsapp` | Provider/API, consent, template dan biaya | Pengiriman/privasi | Tentukan provider dan mekanisme opt-in |
-| Object storage lampiran | `BLOCKED` | Source menyebut metadata; tidak ada integrasi bucket lengkap | MinIO/S3, credential, private bucket, signed URL | Dokumen dapat bocor/tidak dapat diakses | Implementasikan ACL, ukuran, antivirus dan retensi |
+| Object storage lampiran | `IMPLEMENTED` | Supabase Storage privat (`siakad-permissions`) terverifikasi aktif | Supabase Cloud `ap-northeast-2`, service role key | Akses terkontrol via signed URL 15 menit dan AuditLog | Siap digunakan operasional |
 | RFID sekolah | `MOCK`/simulator; hardware `BLOCKED` | Feature description menyebut simulator | Perangkat/protokol/driver dan jaringan | Presensi fisik belum teruji | Uji hardware sekolah dan mekanisme fallback |
 | Flutter offline/sync | `PARTIALLY_IMPLEMENTED` | Cache, local draft, queue, API repo | Endpoint API, perangkat, versi app | Queue/fallback bukan bukti sync server sukses | Uji konflik, retry, idempotensi dan perangkat nyata |
 | Security monitoring/diagnostics | `PARTIALLY_IMPLEMENTED` | Endpoint dashboard/diagnostics ada | Auth role, log, infrastruktur | Bukan pengganti monitoring eksternal | Validasi tiap diagnostik dan alarm operasional |

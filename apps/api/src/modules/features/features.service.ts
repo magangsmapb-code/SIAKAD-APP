@@ -262,6 +262,19 @@ const DEFAULT_FEATURE_REGISTRIES = [
     changeNotes: '10 permohonan izin tersimpan di database.',
   },
   {
+    key: 'feat_permission_attachment',
+    name: 'Penyimpanan Lampiran Izin Privat (Supabase Storage)',
+    description: 'Penyimpanan berkas surat dokter dan dispensasi privat pada Supabase Storage dengan Signed URL 15 menit.',
+    category: 'Attendance',
+    route: '/permissions',
+    implementationStatus: FeatureImplementationStatus.IMPLEMENTED,
+    isEnabled: true,
+    maintenanceStatus: FeatureMaintenanceStatus.ACTIVE,
+    requiredPermissions: ['permissions.view'],
+    dependencies: ['feat_permission_workflow'],
+    changeNotes: 'Terintegrasi penuh dengan Supabase Storage bucket privat siakad-permissions dan Signed URL 15 menit.',
+  },
+  {
     key: 'feat_reports_generator',
     name: 'Generator Rekapitulasi & Kop Surat Resmi',
     description: 'Penyusunan laporan bulanan/harian siap cetak berstandar Dinas Pendidikan Jatim dan unduh spreadsheet CSV.',
@@ -364,6 +377,19 @@ export class FeaturesService implements OnModuleInit {
           await this.prisma.featureRegistry.create({
             data: {
               ...feat,
+              updatedByName: 'System Initializer',
+            },
+          });
+        } else if (
+          feat.key === 'feat_permission_attachment' &&
+          existing.implementationStatus !== FeatureImplementationStatus.IMPLEMENTED
+        ) {
+          await this.prisma.featureRegistry.update({
+            where: { key: feat.key },
+            data: {
+              implementationStatus: FeatureImplementationStatus.IMPLEMENTED,
+              isEnabled: true,
+              changeNotes: feat.changeNotes,
               updatedByName: 'System Initializer',
             },
           });

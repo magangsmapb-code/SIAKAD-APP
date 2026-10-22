@@ -3,9 +3,11 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { StorageService } from '../storage/storage.service';
 import { CreatePermissionDto } from './dto/create-permission.dto';
 import { ReviewPermissionDto } from './dto/review-permission.dto';
 import { QueryPermissionDto } from './dto/query-permission.dto';
@@ -13,9 +15,12 @@ import { PermissionStatus, Role } from '@prisma/client';
 
 @Injectable()
 export class PermissionsService {
+  private readonly logger = new Logger(PermissionsService.name);
+
   constructor(
     private prisma: PrismaService,
     private auditService: AuditService,
+    private storageService: StorageService,
   ) {}
 
   async create(createDto: CreatePermissionDto, currentUser: any, ip?: string, userAgent?: string) {
@@ -130,7 +135,7 @@ export class PermissionsService {
     };
   }
 
-  async findOne(id: string, currentUser: any) {
+  async findOne(id: string, currentUser: any, ip?: string, userAgent?: string) {
     const permission = await this.prisma.permissionRequest.findUnique({
       where: { id },
       include: {
@@ -160,7 +165,34 @@ export class PermissionsService {
       throw new ForbiddenException('Akses ditolak: Anda bukan wali kelas dari siswa yang mengajukan izin ini');
     }
 
-    return permission;
+    let signedAttachmentUrl: string | null = null;
+    if (permission.attachmentUrl) {
+      try {
+        signedAttachmentUrl = await this.storageService.getSignedUrl(permission.attachmentUrl, 900);
+        await this.auditService.record({
+          userId: currentUser.id,
+          actorName: currentUser.fullName || currentUser.username,
+          actorRole: currentUser.role,
+          action: 'PERMISSION_ATTACHMENT_ACCESSED',
+          entity: 'PERMISSION_REQUEST',
+          entityId: id,
+          newValue: {
+            attachmentPath: permission.attachmentUrl,
+            expiresInSeconds: 900,
+          },
+          ipAddress: ip,
+          userAgent,
+        });
+      } catch (err: any) {
+        this.logger.warn(`Could not generate signed URL for permission attachment ${id}: ${err.message}`);
+      }
+    }
+
+    return {
+      ...permission,
+      attachmentUrl: signedAttachmentUrl || permission.attachmentUrl,
+      signedAttachmentUrl,
+    };
   }
 
   async approve(id: string, dto: ReviewPermissionDto, currentUser: any, ip?: string, userAgent?: string) {
