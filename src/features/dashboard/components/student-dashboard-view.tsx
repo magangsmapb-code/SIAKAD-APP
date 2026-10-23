@@ -32,11 +32,11 @@ export function StudentDashboardView() {
   return (
     <div className="space-y-6">
       {/* Student Profile Card Banner */}
-      <div className="rounded-2xl bg-gradient-to-r from-[#0F766E] via-[#115E59] to-[#14B8A6] p-6 text-white shadow-card">
+      <div className="rounded-2xl bg-gradient-to-r from-blue-900 via-indigo-900 to-blue-800 p-4 sm:p-6 text-white shadow-sm border border-indigo-700/30">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-0.5 text-xs font-semibold backdrop-blur-md border border-white/10">
-              <CreditCard className="h-3.5 w-3.5 text-emerald-300" />
+              <CreditCard className="h-3.5 w-3.5 text-blue-200" />
               <span>Kartu RFID Siswa: 73 A4 19 B2 (Aktif)</span>
             </div>
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight">

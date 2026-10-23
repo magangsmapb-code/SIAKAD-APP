@@ -6,6 +6,8 @@ import { ShieldAlert } from "lucide-react";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import { Footer } from "@/components/layout/footer";
+import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
+import { MobileNav } from "@/components/layout/mobile-nav";
 import { DemoRoleProvider, useDemoRole } from "@/contexts/demo-role-context";
 import { SchoolDataProvider } from "@/contexts/school-data-context";
 import { useAuth } from "@/contexts/auth-context";
@@ -60,6 +62,7 @@ export default function DashboardLayout({
 }) {
   const { isLoading, isAuthenticated } = useAuth();
   const [collapsed, setCollapsed] = React.useState(false);
+  const [drawerOpen, setDrawerOpen] = React.useState(false);
 
   if (isLoading) {
     return (
@@ -91,11 +94,17 @@ export default function DashboardLayout({
 
           {/* Main Content Area */}
           <div className="flex flex-1 flex-col min-w-0">
-            <Topbar />
-            <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto animate-in fade-in-50 duration-200">
+            <Topbar onOpenDrawer={() => setDrawerOpen(true)} />
+            <main className="flex-1 p-3 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto animate-in fade-in-50 duration-200 pb-24 md:pb-8">
               <RouteGuard>{children}</RouteGuard>
             </main>
             <Footer />
+
+            {/* Mobile Bottom Thumb Navigation */}
+            <MobileBottomNav onOpenDrawer={() => setDrawerOpen(true)} />
+
+            {/* Accessible Drawer */}
+            <MobileNav open={drawerOpen} onOpenChange={setDrawerOpen} />
           </div>
         </div>
       </SchoolDataProvider>

@@ -87,6 +87,7 @@ export function DeveloperDashboardView() {
   const [permMatrix, setPermMatrix] = React.useState<PermissionMatrixData | null>(null);
   const [loadingPerms, setLoadingPerms] = React.useState(false);
   const [permSearch, setPermSearch] = React.useState("");
+  const [mobileSelectedRole, setMobileSelectedRole] = React.useState<string>("ADMIN");
 
   // Security Hardening & Zero-Trust Control (Tahap 18)
   const [securityOverview, setSecurityOverview] = React.useState<any>(null);
@@ -347,17 +348,17 @@ export function DeveloperDashboardView() {
   return (
     <div className="space-y-6">
       {/* Top Banner */}
-      <div className="rounded-2xl bg-gradient-to-r from-[#042F2E] via-[#0F766E] to-[#115E59] p-6 text-white shadow-card border border-teal-800/40">
+      <div className="rounded-2xl bg-gradient-to-r from-[#0F172A] via-[#1E3A8A] to-[#2563EB] p-4 sm:p-6 text-white shadow-elevated border border-blue-900/30">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-0.5 text-xs font-semibold backdrop-blur-md border border-white/10">
-              <Terminal className="h-3.5 w-3.5 text-teal-300" />
+              <Terminal className="h-3.5 w-3.5 text-blue-300" />
               <span>Developer Governance &amp; Feature Control Center</span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
+            <h1 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight">
               Pusat Tata Kelola Fitur, Izin, &amp; Diagnostik SIAKAD
             </h1>
-            <p className="text-xs sm:text-sm text-slate-200 max-w-2xl">
+            <p className="text-xs sm:text-sm text-slate-200 max-w-2xl leading-relaxed">
               Pusat pengelolaan aktivasi fitur, maintenance mode, matriks izin granular, audit jejak perubahan, dan topologi micro-service untuk tim arsitek dan pengembang.
             </p>
           </div>
@@ -380,7 +381,7 @@ export function DeveloperDashboardView() {
             >
               <Button
                 size="sm"
-                className="bg-teal-600 hover:bg-teal-500 text-white text-xs gap-1.5 shadow"
+                className="bg-blue-600 hover:bg-blue-500 text-white text-xs gap-1.5 shadow"
               >
                 <FileCode2 className="h-3.5 w-3.5" />
                 <span>Swagger OpenAPI Spec</span>
@@ -599,7 +600,111 @@ export function DeveloperDashboardView() {
             </CardHeader>
 
             <CardContent className="p-0">
-              <div className="overflow-x-auto">
+              {/* Mobile View: Responsive Feature Cards (320px - 767px) */}
+              <div className="md:hidden divide-y divide-border/60">
+                {filteredFeatures.map((f) => (
+                  <div key={f.key} className="p-3.5 space-y-2.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="space-y-0.5 min-w-0 flex-1">
+                        <div className="font-bold text-sm text-foreground truncate">
+                          {f.name}
+                        </div>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <Badge variant="outline" className="text-[9px] font-mono py-0">
+                            {f.key}
+                          </Badge>
+                          <Badge variant="secondary" className="text-[9px] py-0">
+                            {f.category}
+                          </Badge>
+                          <span className="font-mono text-[10px] text-primary">
+                            {f.route}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="shrink-0">
+                        {f.implementationStatus === "IMPLEMENTED" ? (
+                          <Badge variant="hadir" className="text-[10px]">
+                            Tersedia
+                          </Badge>
+                        ) : f.implementationStatus === "IN_PROGRESS" ? (
+                          <Badge variant="terlambat" className="text-[10px]">
+                            Dikerjakan
+                          </Badge>
+                        ) : (
+                          <Badge variant="alpa" className="text-[10px]">
+                            Belum Dibuat
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      {f.description}
+                    </p>
+
+                    {/* Dual Action Controls for Mobile with >=40px touch height */}
+                    <div className="grid grid-cols-2 gap-2 pt-1 border-t border-border/50">
+                      <Button
+                        size="sm"
+                        variant={f.isEnabled ? "default" : "outline"}
+                        className={`h-9 text-xs gap-1.5 font-semibold ${
+                          f.isEnabled
+                            ? "bg-emerald-700 hover:bg-emerald-800 text-white"
+                            : "text-muted-foreground"
+                        }`}
+                        onClick={() => handleRequestToggleEnable(f)}
+                      >
+                        {f.isEnabled ? (
+                          <>
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            <span>Fitur Aktif</span>
+                          </>
+                        ) : (
+                          <>
+                            <XCircle className="h-3.5 w-3.5" />
+                            <span>Nonaktif</span>
+                          </>
+                        )}
+                      </Button>
+
+                      <Button
+                        size="sm"
+                        variant={f.maintenanceStatus === "MAINTENANCE" ? "destructive" : "outline"}
+                        className={`h-9 text-xs gap-1.5 font-semibold ${
+                          f.maintenanceStatus === "MAINTENANCE"
+                            ? "bg-amber-600 hover:bg-amber-700 text-white border-none"
+                            : "text-muted-foreground"
+                        }`}
+                        onClick={() => handleRequestToggleMaintenance(f)}
+                      >
+                        <Wrench className="h-3.5 w-3.5" />
+                        <span>
+                          {f.maintenanceStatus === "MAINTENANCE" ? "Maintenance" : "Normal"}
+                        </span>
+                      </Button>
+                    </div>
+
+                    {/* Meta info */}
+                    <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1 border-t border-border/40">
+                      <span>Diubah: {f.updatedByName || "System"}</span>
+                      <span>
+                        {f.lastChangedAt
+                          ? new Date(f.lastChangedAt).toLocaleDateString("id-ID", {
+                              day: "numeric",
+                              month: "short",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : "-"}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop View: Full Table */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-xs text-left data-tabular">
                   <thead>
                     <tr className="border-b border-border bg-muted/40 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
@@ -738,7 +843,7 @@ export function DeveloperDashboardView() {
         <div className="space-y-4">
           <Card>
             <CardHeader className="pb-3 border-b border-border">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <CardTitle className="text-base font-bold text-foreground">
                     Matriks Otorisasi Hak Akses Granular (RBAC)
@@ -747,7 +852,7 @@ export function DeveloperDashboardView() {
                     Hak akses tersimpan di database, dicatat dalam audit log, dan diperiksa oleh backend pada setiap endpoint.
                   </CardDescription>
                 </div>
-                <div className="relative w-64">
+                <div className="relative w-full sm:w-64">
                   <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
                   <Input
                     placeholder="Filter izin..."
@@ -760,7 +865,125 @@ export function DeveloperDashboardView() {
             </CardHeader>
 
             <CardContent className="p-0">
-              <div className="overflow-x-auto">
+              {/* Mobile Role Selector (md:hidden) */}
+              <div className="md:hidden p-3 border-b border-border/70 bg-muted/20 space-y-2">
+                <span className="text-[11px] font-semibold text-muted-foreground block">
+                  Pilih Peran untuk Pengaturan Izin:
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    { id: "ADMIN", label: "Admin" },
+                    { id: "SCHOOL_ADMIN", label: "Tata Usaha" },
+                    { id: "PRINCIPAL", label: "Kepala Sekolah" },
+                    { id: "TEACHER", label: "Guru" },
+                    { id: "STUDENT", label: "Murid" },
+                    { id: "DEVELOPER", label: "Developer" },
+                  ].map((r) => (
+                    <Button
+                      key={r.id}
+                      type="button"
+                      size="sm"
+                      variant={mobileSelectedRole === r.id ? "default" : "outline"}
+                      className={`h-8 text-xs px-2.5 rounded-lg ${
+                        mobileSelectedRole === r.id
+                          ? "bg-primary text-white font-semibold"
+                          : "text-muted-foreground"
+                      }`}
+                      onClick={() => setMobileSelectedRole(r.id)}
+                    >
+                      {r.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Mobile View: Cards Per Role (md:hidden) */}
+              <div className="md:hidden divide-y divide-border/60">
+                {permMatrix?.permissions
+                  ?.filter(
+                    (p) =>
+                      permSearch === "" ||
+                      p.key.toLowerCase().includes(permSearch.toLowerCase()) ||
+                      p.label.toLowerCase().includes(permSearch.toLowerCase()) ||
+                      p.module.toLowerCase().includes(permSearch.toLowerCase())
+                  )
+                  .map((p) => {
+                    const matrix = permMatrix.matrix;
+                    const isEnabled = matrix[mobileSelectedRole]?.includes(p.key);
+                    const isDev = mobileSelectedRole === "DEVELOPER";
+
+                    return (
+                      <div key={p.key} className="p-3.5 space-y-2.5">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="space-y-0.5 min-w-0 flex-1">
+                            <span className="font-mono font-bold text-xs text-foreground block break-all">
+                              {p.key}
+                            </span>
+                            <div className="flex items-center gap-1.5">
+                              <Badge variant="outline" className="text-[9px] py-0">
+                                {p.module}
+                              </Badge>
+                              <span className="text-[11px] text-muted-foreground truncate">
+                                {p.label}
+                              </span>
+                            </div>
+                          </div>
+
+                          <Badge
+                            variant={isEnabled ? "hadir" : "alpa"}
+                            className="text-[10px] shrink-0"
+                          >
+                            {isEnabled ? "Aktif" : "Nonaktif"}
+                          </Badge>
+                        </div>
+
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          {p.description}
+                        </p>
+
+                        <div className="pt-1">
+                          {isDev ? (
+                            <div className="text-[11px] text-muted-foreground italic bg-muted/40 p-2 rounded-lg text-center">
+                              Izin Developer dikontrol otomatis oleh sistem teknis
+                            </div>
+                          ) : (
+                            <Button
+                              type="button"
+                              variant={isEnabled ? "outline" : "default"}
+                              className={`w-full h-10 text-xs font-semibold gap-2 ${
+                                isEnabled
+                                  ? "border-rose-200 text-rose-700 hover:bg-rose-50 dark:border-rose-900/50 dark:text-rose-400"
+                                  : "bg-emerald-600 hover:bg-emerald-700 text-white"
+                              }`}
+                              onClick={() =>
+                                toggleRolePermission(
+                                  mobileSelectedRole,
+                                  p.key,
+                                  !isEnabled,
+                                )
+                              }
+                            >
+                              {isEnabled ? (
+                                <>
+                                  <XCircle className="h-4 w-4" />
+                                  <span>Cabut Izin dari {mobileSelectedRole}</span>
+                                </>
+                              ) : (
+                                <>
+                                  <CheckCircle2 className="h-4 w-4" />
+                                  <span>Berikan Izin ke {mobileSelectedRole}</span>
+                                </>
+                              )}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+
+              {/* Desktop View: Full Matrix Table (hidden md:block) */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-xs text-left data-tabular">
                   <thead>
                     <tr className="border-b border-border bg-muted/40 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">

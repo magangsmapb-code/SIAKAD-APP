@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { TableToolbar } from "@/components/shared/table-toolbar";
 import { Pagination } from "@/components/shared/pagination";
 import { EmptyState } from "@/components/shared/empty-state";
+import { MobileDataCard } from "@/components/shared/mobile-data-list";
 import { PermissionReviewModal } from "./permission-review-modal";
 import { PermissionFormModal } from "./permission-form-modal";
 import { useSchoolData } from "@/contexts/school-data-context";
@@ -146,80 +147,144 @@ export function PermissionTable() {
             }}
           />
         ) : (
-          <div className="overflow-x-auto rounded-md border border-border mt-2">
-            <table className="w-full text-left text-xs min-w-[650px]">
-              <thead className="bg-muted/50 border-b border-border text-muted-foreground uppercase text-[10px] tracking-wider">
-                <tr>
-                  <th className="py-3 px-3.5 font-semibold">Nama Siswa</th>
-                  <th className="py-3 px-3 font-semibold">Jenis Izin</th>
-                  <th className="py-3 px-3 font-semibold">Rentang Waktu</th>
-                  <th className="py-3 px-3 font-semibold">Alasan & Dokumen</th>
-                  <th className="py-3 px-3 font-semibold">Status</th>
-                  <th className="py-3 px-3 text-right font-semibold">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/60">
-                {filtered.map((item) => (
-                  <tr key={item.id} className="hover:bg-muted/30 transition-colors">
-                    <td className="py-3 px-3.5">
-                      <div className="flex flex-col">
-                        <span className="font-semibold text-foreground">
-                          {item.studentName}
+          <>
+            {/* Mobile View: Cards (md:hidden) */}
+            <div className="md:hidden space-y-3 mt-3">
+              {filtered.map((item) => (
+                <MobileDataCard
+                  key={item.id}
+                  title={item.studentName}
+                  subtitle={`NIS: ${item.studentNis} • Kelas ${item.className}`}
+                  badge={getStatusBadge(item.status)}
+                  fields={[
+                    {
+                      label: "Jenis Izin",
+                      value: (
+                        <Badge variant="outline" className="text-[10px]">
+                          {item.type}
+                        </Badge>
+                      ),
+                    },
+                    {
+                      label: "Waktu",
+                      value: (
+                        <span className="text-[11px] font-medium flex items-center gap-1">
+                          <Calendar className="h-3 w-3 text-muted-foreground shrink-0" />
+                          <span>{item.startDate} ({item.totalDays} hari)</span>
                         </span>
-                        <span className="text-[11px] text-muted-foreground">
-                          NIS: {item.studentNis} • {item.className}
-                        </span>
-                      </div>
-                    </td>
-
-                    <td className="py-3 px-3">
-                      <Badge variant="outline" className="font-semibold text-xs">
-                        {item.type}
-                      </Badge>
-                    </td>
-
-                    <td className="py-3 px-3">
-                      <div className="flex items-center gap-1.5 font-medium text-foreground">
-                        <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span>{item.startDate} ({item.totalDays} hari)</span>
-                      </div>
-                    </td>
-
-                    <td className="py-3 px-3 max-w-xs">
-                      <p className="truncate text-foreground font-medium">
-                        {item.reason}
-                      </p>
-                      {item.attachmentName && (
-                        <div className="flex items-center gap-1 text-[11px] text-primary mt-0.5">
-                          <Paperclip className="h-3 w-3" />
+                      ),
+                    },
+                    {
+                      label: "Alasan",
+                      value: (
+                        <span className="truncate block">{item.reason}</span>
+                      ),
+                    },
+                    {
+                      label: "Berkas Lampiran",
+                      value: item.attachmentName ? (
+                        <span className="flex items-center gap-1 text-[11px] text-primary truncate">
+                          <Paperclip className="h-3 w-3 shrink-0" />
                           <span className="truncate">{item.attachmentName}</span>
-                        </div>
-                      )}
-                    </td>
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground text-[11px]">Tanpa Berkas</span>
+                      ),
+                    },
+                  ]}
+                  actions={
+                    <Button
+                      variant={item.status === "MENUNGGU" ? "default" : "outline"}
+                      className="w-full h-10 text-xs font-semibold gap-1.5"
+                      onClick={() => {
+                        setSelectedPermission(item);
+                        setModalOpen(true);
+                      }}
+                    >
+                      <FileText className="h-3.5 w-3.5" />
+                      <span>{item.status === "MENUNGGU" ? "Tinjau & Verifikasi Izin" : "Lihat Detail Berkas"}</span>
+                    </Button>
+                  }
+                />
+              ))}
+            </div>
 
-                    <td className="py-3 px-3">
-                      {getStatusBadge(item.status)}
-                    </td>
-
-                    <td className="py-3 px-3 text-right">
-                      <Button
-                        variant={item.status === "MENUNGGU" ? "default" : "outline"}
-                        size="sm"
-                        className="h-8 text-xs gap-1"
-                        onClick={() => {
-                          setSelectedPermission(item);
-                          setModalOpen(true);
-                        }}
-                      >
-                        <FileText className="h-3.5 w-3.5" />
-                        {item.status === "MENUNGGU" ? "Verifikasi" : "Detail"}
-                      </Button>
-                    </td>
+            {/* Desktop View: Full Table (hidden md:block) */}
+            <div className="hidden md:block overflow-x-auto rounded-md border border-border mt-3">
+              <table className="w-full text-left text-xs min-w-[650px]">
+                <thead className="bg-muted/50 border-b border-border text-muted-foreground uppercase text-[10px] tracking-wider">
+                  <tr>
+                    <th className="py-3 px-3.5 font-semibold">Nama Siswa</th>
+                    <th className="py-3 px-3 font-semibold">Jenis Izin</th>
+                    <th className="py-3 px-3 font-semibold">Rentang Waktu</th>
+                    <th className="py-3 px-3 font-semibold">Alasan & Dokumen</th>
+                    <th className="py-3 px-3 font-semibold">Status</th>
+                    <th className="py-3 px-3 text-right font-semibold">Aksi</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-border/60">
+                  {filtered.map((item) => (
+                    <tr key={item.id} className="hover:bg-muted/30 transition-colors">
+                      <td className="py-3 px-3.5">
+                        <div className="flex flex-col">
+                          <span className="font-semibold text-foreground">
+                            {item.studentName}
+                          </span>
+                          <span className="text-[11px] text-muted-foreground">
+                            NIS: {item.studentNis} • {item.className}
+                          </span>
+                        </div>
+                      </td>
+
+                      <td className="py-3 px-3">
+                        <Badge variant="outline" className="font-semibold text-xs">
+                          {item.type}
+                        </Badge>
+                      </td>
+
+                      <td className="py-3 px-3">
+                        <div className="flex items-center gap-1.5 font-medium text-foreground">
+                          <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span>{item.startDate} ({item.totalDays} hari)</span>
+                        </div>
+                      </td>
+
+                      <td className="py-3 px-3 max-w-xs">
+                        <p className="truncate text-foreground font-medium">
+                          {item.reason}
+                        </p>
+                        {item.attachmentName && (
+                          <div className="flex items-center gap-1 text-[11px] text-primary mt-0.5">
+                            <Paperclip className="h-3 w-3" />
+                            <span className="truncate">{item.attachmentName}</span>
+                          </div>
+                        )}
+                      </td>
+
+                      <td className="py-3 px-3">
+                        {getStatusBadge(item.status)}
+                      </td>
+
+                      <td className="py-3 px-3 text-right">
+                        <Button
+                          variant={item.status === "MENUNGGU" ? "default" : "outline"}
+                          size="sm"
+                          className="h-8 text-xs gap-1"
+                          onClick={() => {
+                            setSelectedPermission(item);
+                            setModalOpen(true);
+                          }}
+                        >
+                          <FileText className="h-3.5 w-3.5" />
+                          {item.status === "MENUNGGU" ? "Verifikasi" : "Detail"}
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </CardContent>
 

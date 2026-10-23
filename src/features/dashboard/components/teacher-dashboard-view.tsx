@@ -35,11 +35,11 @@ export function TeacherDashboardView() {
   return (
     <div className="space-y-6">
       {/* Teacher Profile Banner */}
-      <div className="rounded-2xl bg-gradient-to-r from-[#0F766E] via-[#115E59] to-[#14B8A6] p-6 text-white shadow-card">
+      <div className="rounded-2xl bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 p-4 sm:p-6 text-white shadow-sm border border-blue-700/30">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-0.5 text-xs font-medium backdrop-blur-md border border-white/10">
-              <BookOpen className="h-3.5 w-3.5 text-sky-300" />
+              <BookOpen className="h-3.5 w-3.5 text-blue-200" />
               <span>Portal Guru Pengampu & Wali Kelas</span>
             </div>
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight">

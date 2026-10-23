@@ -40,7 +40,7 @@ export function PrincipalDashboardView() {
   return (
     <div className="space-y-6">
       {/* Principal Executive Banner */}
-      <div className="rounded-2xl bg-gradient-to-r from-[#042F2E] via-[#0F766E] to-[#115E59] p-6 text-white shadow-card border border-teal-800/40">
+      <div className="rounded-2xl bg-gradient-to-r from-slate-950 via-blue-950 to-indigo-950 p-4 sm:p-6 text-white shadow-sm border border-blue-800/40">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/20 text-amber-300 px-3 py-0.5 text-xs font-semibold backdrop-blur-md border border-amber-400/30">
