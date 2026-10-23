@@ -276,25 +276,25 @@ export function TeacherList() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-10 min-h-[44px] text-xs gap-1.5 flex-1 touch-target font-semibold text-primary hover:bg-primary/10 border-primary/20"
+                  className="h-8 text-xs gap-1 flex-1"
                   onClick={() => handleOpenDetail(teacher)}
                 >
-                  <Eye className="h-4 w-4" />
-                  <span>Detail Profil</span>
+                  <Eye className="h-3.5 w-3.5 text-primary" />
+                  Detail Profil
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-10 w-10 min-h-[44px] min-w-[44px] text-muted-foreground hover:text-foreground touch-target"
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
                   title="Edit Data Guru"
                   onClick={() => handleOpenEdit(teacher)}
                 >
-                  <Edit className="h-4 w-4" />
+                  <Edit className="h-3.5 w-3.5" />
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className={`h-10 w-10 min-h-[44px] min-w-[44px] touch-target ${
+                  className={`h-8 w-8 ${
                     teacher.status === "AKTIF"
                       ? "text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40"
                       : "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
@@ -307,9 +307,9 @@ export function TeacherList() {
                   onClick={() => handleOpenToggleStatus(teacher)}
                 >
                   {teacher.status === "AKTIF" ? (
-                    <UserX className="h-4 w-4" />
+                    <UserX className="h-3.5 w-3.5" />
                   ) : (
-                    <UserCheck className="h-4 w-4" />
+                    <UserCheck className="h-3.5 w-3.5" />
                   )}
                 </Button>
               </div>

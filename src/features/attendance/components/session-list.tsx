@@ -493,44 +493,39 @@ export function SessionList() {
                     </div>
 
                     {/* Right: Actions */}
-                    <div className="flex items-center gap-2 w-full md:w-auto shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-border/40">
+                    <div className="flex items-center gap-2 self-end md:self-auto shrink-0">
                       <Button
                         size="sm"
                         onClick={() => handleOpenAttendance(s)}
-                        className={`text-xs gap-1.5 h-11 min-h-[44px] flex-1 md:flex-initial touch-target font-semibold ${
+                        className={`text-xs gap-1.5 min-h-[38px] ${
                           s.isDraft
                             ? "bg-amber-600 hover:bg-amber-700 text-white"
                             : s.status === "SUDAH_DISIMPAN"
-                            ? "bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border"
-                            : "bg-primary text-primary-foreground shadow-sm"
+                            ? "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                            : "bg-primary text-primary-foreground"
                         }`}
                       >
                         {s.isDraft ? (
                           <>
-                            <FileEdit className="h-4 w-4" />
-                            <span>Lanjutkan Draft</span>
+                            <FileEdit className="h-3.5 w-3.5" />
+                            Lanjutkan Draft
                           </>
                         ) : s.status === "SUDAH_DISIMPAN" ? (
                           <>
-                            <Eye className="h-4 w-4" />
-                            <span>Lihat / Ubah Presensi</span>
+                            <Eye className="h-3.5 w-3.5" />
+                            Lihat / Ubah Presensi
                           </>
                         ) : (
                           <>
-                            <FileEdit className="h-4 w-4" />
-                            <span>Isi Presensi</span>
+                            <FileEdit className="h-3.5 w-3.5" />
+                            Isi Presensi
                           </>
                         )}
                       </Button>
 
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-11 w-11 min-h-[44px] min-w-[44px] touch-target text-muted-foreground hover:text-foreground shrink-0"
-                            aria-label="Tindakan Lanjutan Sesi"
-                          >
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>

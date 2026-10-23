@@ -25,26 +25,6 @@ export function MobileNav() {
     setOpen(false);
   }, [pathname]);
 
-  // Lock body scroll and listen for Escape key when open
-  React.useEffect(() => {
-    if (!open) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setOpen(false);
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = originalOverflow;
-    };
-  }, [open]);
-
   // Filter navigation sections based on active user role
   const filteredNavigation = React.useMemo(() => {
     return MAIN_NAVIGATION.map((section) => ({
@@ -61,33 +41,26 @@ export function MobileNav() {
         variant="ghost"
         size="icon"
         onClick={() => setOpen(true)}
-        aria-label="Buka Menu Navigasi SIAKAD"
-        aria-expanded={open}
-        className="h-11 w-11 min-h-[44px] min-w-[44px] flex items-center justify-center text-foreground hover:bg-muted/80 rounded-lg"
+        aria-label="Buka Menu Navigasi"
+        className="h-9 w-9 text-muted-foreground"
       >
         <Menu className="h-5 w-5" />
       </Button>
 
       {open && (
-        <div
-          className="fixed inset-0 z-50 flex"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Menu Navigasi Mobile"
-        >
-          {/* Backdrop with smooth blur */}
+        <div className="fixed inset-0 z-50 flex">
+          {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm transition-opacity duration-200"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
             onClick={() => setOpen(false)}
-            aria-hidden="true"
           />
 
           {/* Drawer Menu */}
-          <div className="relative flex w-[85%] max-w-xs flex-1 flex-col bg-card border-r border-border shadow-2xl animate-in slide-in-from-left duration-250 z-10">
+          <div className="relative flex w-4/5 max-w-xs flex-1 flex-col bg-card border-r border-border shadow-2xl animate-in slide-in-from-left duration-200">
             {/* Header */}
-            <div className="flex h-16 items-center justify-between border-b border-border px-4 bg-muted/20">
+            <div className="flex h-16 items-center justify-between border-b border-border px-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white border border-border p-1 shadow-sm shrink-0">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white border border-border p-1 shadow-sm">
                   <Image
                     src="/logo.png"
                     alt="Logo SMA PB Ngrayun"
@@ -100,7 +73,7 @@ export function MobileNav() {
                   <h3 className="text-sm font-bold leading-none text-foreground">
                     SIAKAD
                   </h3>
-                  <p className="text-[10px] font-semibold text-primary mt-0.5 uppercase tracking-wide">
+                  <p className="text-[10px] font-semibold text-primary mt-0.5">
                     SMA PB Ngrayun
                   </p>
                 </div>
@@ -109,18 +82,18 @@ export function MobileNav() {
                 variant="ghost"
                 size="icon"
                 onClick={() => setOpen(false)}
-                className="h-11 w-11 min-h-[44px] min-w-[44px] rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/80"
-                aria-label="Tutup Menu Navigasi"
+                className="h-8 w-8 rounded-full"
+                aria-label="Tutup Menu"
               >
-                <X className="h-5 w-5" />
+                <X className="h-4 w-4" />
               </Button>
             </div>
 
-            {/* Nav Links - Thumb Friendly (min 44px touch targets) */}
-            <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
+            {/* Nav Links */}
+            <div className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
               {filteredNavigation.map((section, idx) => (
-                <div key={idx} className="space-y-1.5">
-                  <p className="px-3 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/80">
+                <div key={idx} className="space-y-1">
+                  <p className="px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                     {section.group}
                   </p>
                   <nav className="space-y-1">
@@ -134,23 +107,19 @@ export function MobileNav() {
                         <Link
                           key={item.href}
                           href={item.href}
-                          onClick={() => setOpen(false)}
                           className={cn(
-                            "flex items-center gap-3 rounded-lg px-3.5 py-3 min-h-[44px] text-xs font-medium transition-colors touch-target",
+                            "flex items-center gap-3 rounded-md px-3 py-2 text-xs font-medium transition-colors",
                             isActive
-                              ? "bg-primary text-primary-foreground font-semibold shadow-sm"
-                              : "text-muted-foreground hover:bg-muted/70 hover:text-foreground active:bg-muted"
+                              ? "bg-primary text-primary-foreground font-semibold"
+                              : "text-muted-foreground hover:bg-accent hover:text-foreground"
                           )}
                         >
-                          <Icon className={cn("h-4 w-4 shrink-0", isActive ? "text-primary-foreground" : "text-muted-foreground")} />
+                          <Icon className="h-4 w-4 shrink-0" />
                           <span className="flex-1 truncate">{item.title}</span>
                           {item.badge && (
                             <Badge
                               variant={isActive ? "secondary" : "default"}
-                              className={cn(
-                                "text-[10px] px-1.5 py-0 h-4 font-semibold",
-                                item.badge === "Live" && "bg-emerald-500 text-white animate-pulse"
-                              )}
+                              className="text-[10px] px-1.5 py-0"
                             >
                               {item.badge}
                             </Badge>
@@ -164,18 +133,17 @@ export function MobileNav() {
             </div>
 
             {/* Footer */}
-            <div className="border-t border-border p-4 bg-muted/40 space-y-2">
+            <div className="border-t border-border p-4 bg-muted/30 space-y-1.5">
               <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
-                  <span className="h-2 w-2 rounded-full bg-emerald-600 inline-block" />
-                  <span>{INSTITUTION.shortName}</span>
-                </span>
-                <Badge variant="outline" className="text-[10px] px-2 py-0.5 font-medium border-border">
+                <p className="text-xs font-semibold text-foreground">
+                  {INSTITUTION.shortName}
+                </p>
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-medium">
                   {academicYear}
                 </Badge>
               </div>
-              <p className="text-[11px] text-muted-foreground leading-tight">
-                {INSTITUTION.location}
+              <p className="text-[11px] text-muted-foreground">
+                Kec. Ngrayun, Kab. Ponorogo
               </p>
             </div>
           </div>

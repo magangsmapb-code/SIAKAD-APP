@@ -53,13 +53,11 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // SIAKAD Brand Tokens (Professional Academic Blue & Slate Base):
+        // SIAKAD Brand Tokens:
         siakad: {
-          primary: "#2563EB",
-          light: "#3B82F6",
-          dark: "#1D4ED8",
-          soft: "#EFF6FF",
-          accent: "#7C3AED",
+          primary: "#0F766E",
+          light: "#14B8A6",
+          soft: "#F0FDFA",
           surface: "#FFFFFF",
           bg: "#F8FAFC",
           text: "#0F172A",
@@ -67,17 +65,17 @@ const config: Config = {
           border: "#E2E8F0",
         },
         navy: {
-          50: "#f8fafc",
-          100: "#f1f5f9",
-          200: "#e2e8f0",
-          300: "#cbd5e1",
-          400: "#94a3b8",
-          500: "#64748b",
-          600: "#475569",
-          700: "#334155",
-          800: "#1e293b",
-          900: "#0f172a",
-          950: "#020617",
+          50: "#f0fdfa",
+          100: "#ccfbf1",
+          200: "#99f6e4",
+          300: "#5eead4",
+          400: "#2dd4bf",
+          500: "#14b8a6",
+          600: "#0d9488",
+          700: "#0f766e",
+          800: "#115e59",
+          900: "#134e4a",
+          950: "#042f2e",
         },
         status: {
           hadir: {
@@ -118,11 +116,10 @@ const config: Config = {
         sm: "calc(var(--radius) - 4px)",
       },
       boxShadow: {
-        subtle: "0 1px 3px 0 rgba(37, 99, 235, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.04)",
+        subtle: "0 1px 3px 0 rgba(15, 118, 110, 0.05), 0 1px 2px -1px rgba(15, 118, 110, 0.05)",
         card: "0 4px 6px -1px rgba(15, 23, 42, 0.06), 0 2px 4px -2px rgba(15, 23, 42, 0.04)",
-        elevated: "0 10px 15px -3px rgba(37, 99, 235, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.04)",
-        "blue-btn": "0 8px 18px -4px rgba(37, 99, 235, 0.35)",
-        "teal-btn": "0 8px 18px -4px rgba(37, 99, 235, 0.35)", // backward compatibility
+        elevated: "0 10px 15px -3px rgba(15, 118, 110, 0.1), 0 4px 6px -4px rgba(15, 118, 110, 0.05)",
+        "teal-btn": "0 8px 18px -4px rgba(15, 118, 110, 0.42)",
         "card-soft": "0 2px 12px -2px rgba(15, 23, 42, 0.05)",
       },
       fontFamily: {
