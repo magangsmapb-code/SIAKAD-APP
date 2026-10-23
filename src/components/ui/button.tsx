@@ -22,15 +22,15 @@ const buttonVariants = cva(
         success:
           "bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm",
         siakad:
-          "bg-gradient-to-r from-[#0F766E] via-[#0D9488] to-[#14B8A6] text-white hover:brightness-105 shadow-md shadow-teal-900/10 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 font-semibold transition-all duration-150",
+          "bg-gradient-to-r from-blue-700 via-blue-600 to-blue-500 text-white hover:brightness-105 shadow-md shadow-blue-900/10 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 font-semibold transition-all duration-150",
       },
       size: {
-        default: "h-9 px-4 py-2",
-        sm: "h-8 rounded-md px-3 text-xs",
-        lg: "h-11 rounded-md px-8 text-base",
-        icon: "h-9 w-9 p-0",
-        "icon-sm": "h-8 w-8 p-0 rounded-md",
-        "icon-lg": "h-10 w-10 p-0 rounded-md",
+        default: "h-10 sm:h-9 px-4 py-2 text-xs sm:text-sm",
+        sm: "h-9 sm:h-8 rounded-md px-3 text-xs",
+        lg: "h-12 sm:h-11 rounded-lg px-8 text-sm sm:text-base",
+        icon: "h-10 w-10 sm:h-9 sm:w-9 p-0",
+        "icon-sm": "h-9 w-9 sm:h-8 sm:w-8 p-0 rounded-md",
+        "icon-lg": "h-11 w-11 sm:h-10 sm:w-10 p-0 rounded-md",
       },
     },
     defaultVariants: {

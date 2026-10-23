@@ -41,10 +41,11 @@ import { toast } from "sonner";
 
 export interface TopbarProps {
   onToggleSidebar?: () => void;
+  onOpenDrawer?: () => void;
   className?: string;
 }
 
-export function Topbar({ className = "" }: TopbarProps) {
+export function Topbar({ onOpenDrawer, className = "" }: TopbarProps) {
   const pathname = usePathname();
   const mounted = useMounted();
   const { role, setRole, academicYear, setAcademicYear } = useDemoRole();
@@ -123,9 +124,29 @@ export function Topbar({ className = "" }: TopbarProps) {
         className={`sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-border bg-card/95 px-3 sm:px-6 backdrop-blur supports-[backdrop-filter]:bg-card/80 gap-2 sm:gap-4 ${className}`}
       >
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          <MobileNav />
+          {onOpenDrawer ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onOpenDrawer}
+              aria-label="Buka Menu Navigasi"
+              className="md:hidden h-10 w-10 text-muted-foreground hover:text-foreground"
+            >
+              <span className="sr-only">Menu</span>
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </Button>
+          ) : (
+            <MobileNav />
+          )}
           <div className="hidden lg:block">
             <BreadcrumbNav items={breadcrumbs} />
+          </div>
+          <div className="lg:hidden flex items-center">
+            <span className="font-bold text-xs sm:text-sm text-foreground truncate max-w-[130px] sm:max-w-[220px]">
+              {breadcrumbs[breadcrumbs.length - 1]?.label || "Dashboard"}
+            </span>
           </div>
         </div>
 
