@@ -30,7 +30,7 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.SCHOOL_ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.SCHOOL_ADMIN, Role.DEVELOPER)
   @Permission('users.view')
   @ApiOperation({ summary: 'Daftar semua pengguna dengan filter dan pencarian' })
   async findAll(
@@ -48,7 +48,7 @@ export class UsersController {
   }
 
   @Get(':id')
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.SCHOOL_ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.SCHOOL_ADMIN, Role.DEVELOPER)
   @Permission('users.view')
   @ApiOperation({ summary: 'Detail pengguna' })
   async findOne(@Param('id') id: string) {
@@ -60,7 +60,7 @@ export class UsersController {
   }
 
   @Post()
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.DEVELOPER)
   @Permission('users.create')
   @ApiOperation({ summary: 'Tambah akun pengguna baru (Admin)' })
   @ApiResponse({ status: 201, description: 'Pengguna berhasil dibuat' })
@@ -80,7 +80,7 @@ export class UsersController {
   }
 
   @Patch(':id')
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.DEVELOPER)
   @Permission('users.update')
   @ApiOperation({ summary: 'Perbarui peran atau status akun pengguna (Admin)' })
   async update(

@@ -37,7 +37,7 @@ export class SettingsController {
   }
 
   @Patch()
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.DEVELOPER)
   @Permission('settings.manage')
   @ApiOperation({ summary: 'Perbarui konfigurasi pengaturan sekolah (Admin)' })
   @ApiResponse({ status: 200, description: 'Pengaturan berhasil diperbarui' })

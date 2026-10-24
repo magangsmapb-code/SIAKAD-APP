@@ -42,7 +42,7 @@ export class PermissionsController {
   }
 
   @Post()
-  @Roles(Role.STUDENT, Role.ADMIN, Role.SUPER_ADMIN)
+  @Roles(Role.STUDENT, Role.ADMIN, Role.SUPER_ADMIN, Role.DEVELOPER)
   @Permission('permissions.create')
   @ApiOperation({ summary: 'Ajukan permohonan izin atau sakit baru' })
   @ApiResponse({ status: 201, description: 'Pengajuan izin berhasil dibuat' })
@@ -79,7 +79,7 @@ export class PermissionsController {
   }
 
   @Post(':id/approve')
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.TEACHER, Role.PRINCIPAL)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.TEACHER, Role.PRINCIPAL, Role.DEVELOPER)
   @Permission('permissions.review')
   @ApiOperation({ summary: 'Setujui permohonan izin (Guru Wali / Admin)' })
   async approve(
@@ -99,7 +99,7 @@ export class PermissionsController {
   }
 
   @Post(':id/reject')
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.TEACHER, Role.PRINCIPAL)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.TEACHER, Role.PRINCIPAL, Role.DEVELOPER)
   @Permission('permissions.review')
   @ApiOperation({ summary: 'Tolak permohonan izin (Guru Wali / Admin)' })
   async reject(

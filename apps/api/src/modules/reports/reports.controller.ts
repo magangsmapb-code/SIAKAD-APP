@@ -17,7 +17,7 @@ export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
 
   @Get('attendance')
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.PRINCIPAL, Role.SCHOOL_ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.PRINCIPAL, Role.SCHOOL_ADMIN, Role.DEVELOPER)
   @Permission('reports.view')
   @ApiOperation({ summary: 'Laporan agregat kehadiran seluruh sekolah' })
   async getSchoolReport(
@@ -49,7 +49,7 @@ export class ReportsController {
   }
 
   @Get('classes/:id/attendance')
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.PRINCIPAL, Role.TEACHER)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.PRINCIPAL, Role.TEACHER, Role.DEVELOPER)
   @Permission('reports.view')
   @ApiOperation({ summary: 'Laporan rekapitulasi kehadiran per kelas' })
   async getClassReport(

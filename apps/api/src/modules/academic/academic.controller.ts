@@ -50,7 +50,7 @@ export class AcademicController {
   }
 
   @Post('academic-years')
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.DEVELOPER)
   @Permission('academic.classes.manage')
   @ApiOperation({ summary: 'Tambah tahun ajaran baru (Admin)' })
   async createAcademicYear(@Body() dto: CreateAcademicYearDto, @CurrentUser() user: any) {
@@ -59,7 +59,7 @@ export class AcademicController {
   }
 
   @Post('academic-years/:id/activate')
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.DEVELOPER)
   @Permission('academic.classes.manage')
   @ApiOperation({ summary: 'Aktifkan tahun ajaran (Admin)' })
   async setActiveAcademicYear(@Param('id') id: string, @CurrentUser() user: any) {
@@ -91,7 +91,7 @@ export class AcademicController {
   }
 
   @Post('classes')
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.DEVELOPER)
   @Permission('academic.classes.manage')
   @ApiOperation({ summary: 'Tambah kelas baru (Admin)' })
   async createClass(@Body() dto: CreateClassDto, @CurrentUser() user: any) {
@@ -100,7 +100,7 @@ export class AcademicController {
   }
 
   @Patch('classes/:id')
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.DEVELOPER)
   @Permission('academic.classes.manage')
   @ApiOperation({ summary: 'Perbarui kelas (Admin)' })
   async updateClass(
@@ -110,6 +110,15 @@ export class AcademicController {
   ) {
     const data = await this.academicService.updateClass(id, dto, user);
     return { message: 'Kelas berhasil diperbarui', data };
+  }
+
+  @Delete('classes/:id')
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.DEVELOPER)
+  @Permission('academic.classes.manage')
+  @ApiOperation({ summary: 'Hapus kelas (Admin)' })
+  async deleteClass(@Param('id') id: string, @CurrentUser() user: any) {
+    const result = await this.academicService.deleteClass(id, user);
+    return result;
   }
 
   // ---------------------------------------------------------------------------
@@ -132,7 +141,7 @@ export class AcademicController {
   }
 
   @Post('subjects')
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.DEVELOPER)
   @Permission('academic.subjects.manage')
   @ApiOperation({ summary: 'Tambah mata pelajaran baru (Admin)' })
   async createSubject(@Body() dto: CreateSubjectDto, @CurrentUser() user: any) {
@@ -141,7 +150,7 @@ export class AcademicController {
   }
 
   @Patch('subjects/:id')
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.DEVELOPER)
   @Permission('academic.subjects.manage')
   @ApiOperation({ summary: 'Perbarui mata pelajaran (Admin)' })
   async updateSubject(
@@ -151,6 +160,15 @@ export class AcademicController {
   ) {
     const data = await this.academicService.updateSubject(id, dto, user);
     return { message: 'Mata pelajaran berhasil diperbarui', data };
+  }
+
+  @Delete('subjects/:id')
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.DEVELOPER)
+  @Permission('academic.subjects.manage')
+  @ApiOperation({ summary: 'Hapus mata pelajaran (Admin)' })
+  async deleteSubject(@Param('id') id: string, @CurrentUser() user: any) {
+    const result = await this.academicService.deleteSubject(id, user);
+    return result;
   }
 
   // ---------------------------------------------------------------------------
@@ -170,7 +188,7 @@ export class AcademicController {
   }
 
   @Post('schedules')
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.DEVELOPER)
   @Permission('academic.schedules.manage')
   @ApiOperation({ summary: 'Tambah jadwal pelajaran (Admin)' })
   async createSchedule(@Body() dto: CreateScheduleDto, @CurrentUser() user: any) {
@@ -179,7 +197,7 @@ export class AcademicController {
   }
 
   @Patch('schedules/:id')
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.DEVELOPER)
   @Permission('academic.schedules.manage')
   @ApiOperation({ summary: 'Perbarui jadwal pelajaran (Admin)' })
   async updateSchedule(
@@ -192,7 +210,7 @@ export class AcademicController {
   }
 
   @Delete('schedules/:id')
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.DEVELOPER)
   @Permission('academic.schedules.manage')
   @ApiOperation({ summary: 'Hapus jadwal pelajaran (Admin)' })
   async deleteSchedule(@Param('id') id: string, @CurrentUser() user: any) {

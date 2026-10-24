@@ -52,18 +52,21 @@ interface SchoolDataContextValue {
   addTeacher: (data: TeacherFormInput) => Promise<Teacher>;
   updateTeacher: (id: string, data: Partial<Teacher>) => Promise<void>;
   toggleTeacherStatus: (id: string) => Promise<void>;
+  deleteTeacher: (id: string) => Promise<void>;
 
   // Classes
   classes: SchoolClass[];
   addClass: (data: ClassFormInput) => Promise<SchoolClass>;
   updateClass: (id: string, data: Partial<SchoolClass>) => Promise<void>;
   archiveClass: (id: string) => void;
+  deleteClass: (id: string) => Promise<void>;
 
   // Subjects
   subjects: Subject[];
   addSubject: (data: SubjectFormInput) => Promise<Subject>;
   updateSubject: (id: string, data: Partial<Subject>) => Promise<void>;
   toggleSubjectStatus: (id: string) => Promise<void>;
+  deleteSubject: (id: string) => Promise<void>;
 
   // Schedules
   schedules: ScheduleItem[];
@@ -675,6 +678,22 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
     }
   }, [teachers]);
 
+  const deleteTeacher = React.useCallback(async (id: string) => {
+    const teacher = teachers.find((t) => t.id === id);
+    try {
+      await apiClient.delete(`/teachers/${id}`);
+      setTeachers((prev) => prev.filter((t) => t.id !== id));
+      toast.success(
+        teacher
+          ? `Data guru ${teacher.fullName} berhasil diproses.`
+          : "Data guru berhasil dihapus."
+      );
+    } catch (err: any) {
+      toast.error("Gagal Menghapus Guru", { description: err.message });
+      throw err;
+    }
+  }, [teachers]);
+
   // ==========================================
   // CLASSES CRUD (Live API)
   // ==========================================
@@ -769,6 +788,22 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
     );
   }, []);
 
+  const deleteClass = React.useCallback(async (id: string) => {
+    const target = classes.find((c) => c.id === id);
+    try {
+      await apiClient.delete(`/classes/${id}`);
+      setClasses((prev) => prev.filter((c) => c.id !== id));
+      toast.success(
+        target
+          ? `Kelas ${target.name} berhasil dihapus.`
+          : "Kelas berhasil dihapus."
+      );
+    } catch (err: any) {
+      toast.error("Gagal Menghapus Kelas", { description: err.message });
+      throw err;
+    }
+  }, [classes]);
+
   // ==========================================
   // SUBJECTS CRUD (Live API)
   // ==========================================
@@ -849,6 +884,22 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
       );
     } catch (err: any) {
       toast.error("Gagal Mengubah Status Mapel", { description: err.message });
+      throw err;
+    }
+  }, [subjects]);
+
+  const deleteSubject = React.useCallback(async (id: string) => {
+    const target = subjects.find((s) => s.id === id);
+    try {
+      await apiClient.delete(`/subjects/${id}`);
+      setSubjects((prev) => prev.filter((s) => s.id !== id));
+      toast.success(
+        target
+          ? `Mata pelajaran ${target.name} berhasil dihapus.`
+          : "Mata pelajaran berhasil dihapus."
+      );
+    } catch (err: any) {
+      toast.error("Gagal Menghapus Mata Pelajaran", { description: err.message });
       throw err;
     }
   }, [subjects]);
@@ -1376,14 +1427,17 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
       addTeacher,
       updateTeacher,
       toggleTeacherStatus,
+      deleteTeacher,
       classes,
       addClass,
       updateClass,
       archiveClass,
+      deleteClass,
       subjects,
       addSubject,
       updateSubject,
       toggleSubjectStatus,
+      deleteSubject,
       schedules,
       addSchedule,
       updateSchedule,
@@ -1415,14 +1469,17 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
       addTeacher,
       updateTeacher,
       toggleTeacherStatus,
+      deleteTeacher,
       classes,
       addClass,
       updateClass,
       archiveClass,
+      deleteClass,
       subjects,
       addSubject,
       updateSubject,
       toggleSubjectStatus,
+      deleteSubject,
       schedules,
       addSchedule,
       updateSchedule,

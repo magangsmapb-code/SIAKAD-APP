@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Body,
   Param,
   Query,
@@ -54,7 +55,7 @@ export class TeachersController {
   }
 
   @Post()
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.SCHOOL_ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.SCHOOL_ADMIN, Role.DEVELOPER)
   @Permission('teachers.manage')
   @ApiOperation({ summary: 'Tambah data guru baru (Hanya Admin)' })
   @ApiResponse({ status: 201, description: 'Guru berhasil ditambahkan' })
@@ -74,7 +75,7 @@ export class TeachersController {
   }
 
   @Patch(':id')
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.SCHOOL_ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.SCHOOL_ADMIN, Role.DEVELOPER)
   @Permission('teachers.manage')
   @ApiOperation({ summary: 'Perbarui data guru (Hanya Admin)' })
   async update(
@@ -91,5 +92,21 @@ export class TeachersController {
       message: 'Data guru berhasil diperbarui',
       data: result,
     };
+  }
+
+  @Delete(':id')
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.SCHOOL_ADMIN, Role.DEVELOPER)
+  @Permission('teachers.manage')
+  @ApiOperation({ summary: 'Hapus atau nonaktifkan data guru (Hanya Admin)' })
+  async delete(
+    @Param('id') id: string,
+    @CurrentUser() user: any,
+    @Req() req: Request,
+  ) {
+    const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
+    const userAgent = req.headers['user-agent'] || 'Unknown';
+
+    const result = await this.teachersService.remove(id, user, ip, userAgent);
+    return result;
   }
 }

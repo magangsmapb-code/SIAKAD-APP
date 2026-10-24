@@ -217,4 +217,70 @@ export class TeachersService {
 
     return updated;
   }
+
+  async remove(id: string, currentUser: any, ip?: string, userAgent?: string) {
+    const existing = await this.prisma.teacher.findUnique({
+      where: { id },
+      include: {
+        homeroomClasses: true,
+        teachingAssignments: true,
+      },
+    });
+
+    if (!existing) {
+      throw new NotFoundException(`Data guru dengan ID '${id}' tidak ditemukan`);
+    }
+
+    const attendanceCount = await this.prisma.teacherAttendance.count({
+      where: { teacherId: id },
+    });
+
+    const sessionCount = await this.prisma.attendanceSession.count({
+      where: { teacherId: id },
+    });
+
+    if (
+      existing.homeroomClasses.length > 0 ||
+      existing.teachingAssignments.length > 0 ||
+      attendanceCount > 0 ||
+      sessionCount > 0
+    ) {
+      const updated = await this.prisma.teacher.update({
+        where: { id },
+        data: { status: 'NON_AKTIF' },
+      });
+
+      await this.auditService.record({
+        userId: currentUser.id,
+        actorName: currentUser.fullName || currentUser.username,
+        actorRole: currentUser.role,
+        action: 'TEACHER_DEACTIVATED',
+        entity: 'TEACHER',
+        entityId: id,
+        ipAddress: ip,
+        userAgent,
+      });
+
+      return {
+        message: 'Guru dinonaktifkan karena telah memiliki riwayat akademik/kehadiran',
+        data: updated,
+      };
+    }
+
+    await this.prisma.teacher.delete({ where: { id } });
+
+    await this.auditService.record({
+      userId: currentUser.id,
+      actorName: currentUser.fullName || currentUser.username,
+      actorRole: currentUser.role,
+      action: 'TEACHER_DELETED',
+      entity: 'TEACHER',
+      entityId: id,
+      ipAddress: ip,
+      userAgent,
+    });
+
+    return { message: 'Data guru berhasil dihapus' };
+  }
 }
+

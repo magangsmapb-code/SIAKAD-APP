@@ -55,7 +55,7 @@ export class StudentsController {
   }
 
   @Post()
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.SCHOOL_ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.SCHOOL_ADMIN, Role.DEVELOPER)
   @Permission('students.manage')
   @ApiOperation({ summary: 'Tambah data siswa baru (Hanya Admin)' })
   @ApiResponse({ status: 201, description: 'Siswa berhasil ditambahkan' })
@@ -75,7 +75,7 @@ export class StudentsController {
   }
 
   @Patch(':id')
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.SCHOOL_ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.SCHOOL_ADMIN, Role.DEVELOPER)
   @Permission('students.manage')
   @ApiOperation({ summary: 'Perbarui data siswa (Hanya Admin)' })
   async update(
@@ -95,7 +95,7 @@ export class StudentsController {
   }
 
   @Delete(':id')
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.SCHOOL_ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.SCHOOL_ADMIN, Role.DEVELOPER)
   @Permission('students.manage')
   @ApiOperation({ summary: 'Hapus atau nonaktifkan data siswa (Hanya Admin)' })
   async delete(

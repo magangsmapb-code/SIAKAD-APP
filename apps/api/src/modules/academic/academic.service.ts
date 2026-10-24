@@ -466,4 +466,81 @@ export class AcademicService {
 
     return { message: 'Jadwal pelajaran berhasil dihapus' };
   }
+
+  async deleteClass(id: string, currentUser: any) {
+    const existing = await this.prisma.class.findUnique({
+      where: { id },
+      include: {
+        students: true,
+        schedules: true,
+        attendanceSessions: true,
+      },
+    });
+
+    if (!existing) throw new NotFoundException('Kelas tidak ditemukan');
+
+    if (existing.students.length > 0) {
+      throw new BadRequestException(
+        `Tidak dapat menghapus kelas '${existing.name}' karena masih memiliki ${existing.students.length} siswa terdaftar. Pindahkan siswa terlebih dahulu.`,
+      );
+    }
+
+    if (existing.schedules.length > 0 || existing.attendanceSessions.length > 0) {
+      throw new BadRequestException(
+        `Tidak dapat menghapus kelas '${existing.name}' karena masih memiliki riwayat jadwal atau sesi presensi aktif.`,
+      );
+    }
+
+    await this.prisma.class.delete({ where: { id } });
+
+    await this.auditService.record({
+      userId: currentUser.id,
+      actorName: currentUser.fullName || currentUser.username,
+      actorRole: currentUser.role,
+      action: 'CLASS_DELETED',
+      entity: 'CLASS',
+      entityId: id,
+      oldValue: { name: existing.name },
+    });
+
+    return { message: `Kelas '${existing.name}' berhasil dihapus` };
+  }
+
+  async deleteSubject(id: string, currentUser: any) {
+    const existing = await this.prisma.subject.findUnique({
+      where: { id },
+      include: {
+        teachingAssignments: true,
+        schedules: true,
+        attendanceSessions: true,
+      },
+    });
+
+    if (!existing) throw new NotFoundException('Mata pelajaran tidak ditemukan');
+
+    if (
+      existing.teachingAssignments.length > 0 ||
+      existing.schedules.length > 0 ||
+      existing.attendanceSessions.length > 0
+    ) {
+      throw new BadRequestException(
+        `Tidak dapat menghapus mata pelajaran '${existing.name}' karena masih memiliki penugasan guru, jadwal, atau sesi presensi aktif.`,
+      );
+    }
+
+    await this.prisma.subject.delete({ where: { id } });
+
+    await this.auditService.record({
+      userId: currentUser.id,
+      actorName: currentUser.fullName || currentUser.username,
+      actorRole: currentUser.role,
+      action: 'SUBJECT_DELETED',
+      entity: 'SUBJECT',
+      entityId: id,
+      oldValue: { name: existing.name, code: existing.code },
+    });
+
+    return { message: `Mata pelajaran '${existing.name}' berhasil dihapus` };
+  }
 }
+
