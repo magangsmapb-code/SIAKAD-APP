@@ -89,5 +89,11 @@ export default async function handler(req: any, res: any) {
   if (!isReady) {
     await bootstrap();
   }
+  // Normalize root and docs URLs for NestJS globalPrefix 'api/v1'
+  if (!req.url || req.url === '/' || req.url === '/api' || req.url === '/api/') {
+    req.url = '/api/v1';
+  } else if (req.url === '/docs' || req.url === '/api/docs' || req.url === '/api/docs/') {
+    req.url = '/api/v1/docs';
+  }
   return server(req, res);
 }
