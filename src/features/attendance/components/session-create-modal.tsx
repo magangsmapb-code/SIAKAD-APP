@@ -60,6 +60,8 @@ export function SessionCreateModal({
       endTime: "09:00",
       room: "R.101",
       notes: "",
+      radiusMeters: 100,
+      token: Math.floor(100000 + Math.random() * 900000).toString(),
     },
   });
 
@@ -308,6 +310,54 @@ export function SessionCreateModal({
               className="text-xs resize-none"
               {...form.register("notes")}
             />
+          </div>
+
+          {/* Token & Radius Geofence */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-border/60">
+            <div className="space-y-1">
+              <label className="text-xs font-semibold flex items-center justify-between">
+                <span>Batas Radius GPS</span>
+                <span className="text-[10px] text-muted-foreground font-normal">Geofence</span>
+              </label>
+              <Select
+                value={form.watch("radiusMeters")?.toString() || "100"}
+                onValueChange={(val) => form.setValue("radiusMeters", parseInt(val, 10))}
+              >
+                <SelectTrigger className="text-xs h-9">
+                  <SelectValue placeholder="Pilih Radius" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="25">25 Meter (Dalam Kelas)</SelectItem>
+                  <SelectItem value="50">50 Meter (Blok Kelas)</SelectItem>
+                  <SelectItem value="100">100 Meter (Area Sekolah)</SelectItem>
+                  <SelectItem value="250">250 Meter (Kampus Luas)</SelectItem>
+                  <SelectItem value="0">Bebas (Tanpa Batas Radius)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-semibold flex items-center justify-between">
+                <span>Token Presensi 6-Digit</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newToken = Math.floor(100000 + Math.random() * 900000).toString();
+                    form.setValue("token", newToken);
+                  }}
+                  className="text-[10px] text-primary hover:underline font-normal"
+                >
+                  Acak Ulang
+                </button>
+              </label>
+              <Input
+                type="text"
+                maxLength={6}
+                placeholder="6-digit token..."
+                className="text-xs h-9 font-mono tracking-widest text-center font-bold"
+                {...form.register("token")}
+              />
+            </div>
           </div>
 
           <DialogFooter className="gap-2 sm:gap-0 pt-2 border-t">

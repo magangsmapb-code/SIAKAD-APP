@@ -346,6 +346,10 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
             lateCount: late,
             isDraft: ses.status === 'SEDANG_BERLANGSUNG',
             notes: ses.notes || undefined,
+            token: ses.token || (ses.notes && ses.notes.includes('TOKEN:') ? ses.notes.split('TOKEN:')[1]?.trim().slice(0, 6) : undefined),
+            barcode: ses.barcode,
+            radiusMeters: ses.radiusMeters,
+            enableGps: ses.enableGps,
             entries,
           };
         });
@@ -1085,6 +1089,10 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
   const createSession = React.useCallback(
     async (data: AttendanceSessionFormInput): Promise<AttendanceSessionItem> => {
       try {
+        const noteWithToken = data.token
+          ? `${data.notes ? data.notes + ' ' : ''}[TOKEN:${data.token}${data.radiusMeters ? `|RADIUS:${data.radiusMeters}m` : ''}]`
+          : data.notes;
+
         const res = await apiClient.post<any>('/attendance/sessions', {
           classId: data.classId,
           subjectId: data.subjectId,
@@ -1093,7 +1101,7 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
           startTime: data.startTime,
           endTime: data.endTime,
           room: data.room,
-          notes: data.notes || undefined,
+          notes: noteWithToken || undefined,
         });
 
         const created = res.data;
@@ -1137,6 +1145,10 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
           isDraft: false,
           notes: data.notes,
           entries: initialEntries,
+          token: data.token,
+          barcode: data.barcode,
+          radiusMeters: data.radiusMeters,
+          enableGps: data.enableGps,
         };
 
         setSessions((prev) => [newSession, ...prev]);

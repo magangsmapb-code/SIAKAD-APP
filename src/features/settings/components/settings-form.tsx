@@ -12,6 +12,8 @@ import {
   ShieldCheck,
   Save,
   Check,
+  Navigation,
+  MapPin,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -21,6 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { schoolSettingsSchema, SchoolSettingsInput } from "@/lib/validators";
 import { useSchoolData } from "@/contexts/school-data-context";
 import { INSTITUTION } from "@/lib/constants";
+import { toast } from "sonner";
 
 export function SettingsForm() {
   const { schoolSettings, updateSchoolSettings } = useSchoolData();
@@ -46,6 +49,11 @@ export function SettingsForm() {
       toleranceMinutes: 15,
       telegramNotification: true,
       whatsappNotification: true,
+      enableGps: true,
+      schoolLatitude: -8.0435,
+      schoolLongitude: 111.4123,
+      maxGpsRadiusMeters: 100,
+      maxGpsAccuracyMeters: 50,
     },
   });
 
@@ -61,12 +69,37 @@ export function SettingsForm() {
         toleranceMinutes: schoolSettings.toleranceMinutes || 15,
         telegramNotification: schoolSettings.telegramNotification ?? true,
         whatsappNotification: schoolSettings.whatsappNotification ?? true,
+        enableGps: schoolSettings.enableGps ?? true,
+        schoolLatitude: schoolSettings.schoolLatitude ?? -8.0435,
+        schoolLongitude: schoolSettings.schoolLongitude ?? 111.4123,
+        maxGpsRadiusMeters: schoolSettings.maxGpsRadiusMeters ?? 100,
+        maxGpsAccuracyMeters: schoolSettings.maxGpsAccuracyMeters ?? 50,
       });
     }
   }, [schoolSettings, reset]);
 
   const waNotif = watch("whatsappNotification");
   const tgNotif = watch("telegramNotification");
+  const enableGps = watch("enableGps");
+  const maxRadius = watch("maxGpsRadiusMeters");
+
+  const handleDetectLocation = () => {
+    if (typeof navigator !== "undefined" && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setValue("schoolLatitude", parseFloat(pos.coords.latitude.toFixed(6)));
+          setValue("schoolLongitude", parseFloat(pos.coords.longitude.toFixed(6)));
+          toast.success("Koordinat lokasi GPS berhasil dideteksi.");
+        },
+        (err) => {
+          toast.error("Gagal mendeteksi lokasi GPS: " + err.message);
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    } else {
+      toast.error("Browser tidak mendukung sensor Geolocation.");
+    }
+  };
 
   const onSubmit = async (data: SchoolSettingsInput) => {
     setIsSubmitting(true);
@@ -170,6 +203,91 @@ export function SettingsForm() {
               <span className="text-destructive">*</span>
             </label>
             <Input {...register("exitTimeFriday")} placeholder="11:30" error={!!errors.exitTimeFriday} />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Konfigurasi Geofencing & Radius GPS Presensi */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Navigation className="h-5 w-5 text-emerald-600" />
+              <div>
+                <CardTitle className="text-base font-bold">Geofencing & Radius Lokasi Presensi</CardTitle>
+                <CardDescription className="text-xs">
+                  Batas radius toleransi jarak fisik GPS siswa dan guru dari sekolah
+                </CardDescription>
+              </div>
+            </div>
+            <Badge variant="outline" className="font-mono text-xs bg-emerald-500/10 text-emerald-600 border-emerald-500/30">
+              Radius: {maxRadius || 100} m
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <label className="flex items-start gap-3 rounded-xl border border-border p-3 cursor-pointer hover:bg-muted/30">
+            <Checkbox
+              checked={enableGps}
+              onCheckedChange={(c) => setValue("enableGps", !!c)}
+              className="mt-0.5"
+            />
+            <div className="space-y-0.5">
+              <span className="text-xs font-semibold text-foreground">
+                Wajibkan Verifikasi Radius Lokasi GPS
+              </span>
+              <p className="text-[11px] text-muted-foreground">
+                Menolak presensi mandiri atau presensi token/QR jika perangkat pengguna berada di luar radius toleransi sekolah.
+              </p>
+            </div>
+          </label>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-1">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-foreground flex items-center justify-between">
+                <span>Latitude Sekolah</span>
+                <button
+                  type="button"
+                  onClick={handleDetectLocation}
+                  className="text-[10px] text-primary hover:underline font-normal flex items-center gap-1"
+                >
+                  <MapPin className="h-3 w-3" />
+                  Deteksi GPS
+                </button>
+              </label>
+              <Input
+                type="number"
+                step="any"
+                {...register("schoolLatitude")}
+                placeholder="-8.043500"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-foreground">
+                Longitude Sekolah
+              </label>
+              <Input
+                type="number"
+                step="any"
+                {...register("schoolLongitude")}
+                placeholder="111.412300"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-foreground">
+                Radius Toleransi (Meter)
+              </label>
+              <Input
+                type="number"
+                min={10}
+                max={5000}
+                {...register("maxGpsRadiusMeters")}
+                placeholder="100"
+              />
+              <span className="text-[10px] text-muted-foreground">Rekomendasi: 50m - 150m</span>
+            </div>
           </div>
         </CardContent>
       </Card>

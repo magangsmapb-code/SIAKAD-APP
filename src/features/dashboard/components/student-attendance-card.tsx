@@ -13,6 +13,9 @@ import {
   Navigation,
   FileQuestion,
   Info,
+  QrCode,
+  Barcode,
+  KeyRound,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -98,6 +101,11 @@ export function StudentAttendanceCard() {
   const [correctionModalOpen, setCorrectionModalOpen] = React.useState(false);
   const [correctionReason, setCorrectionReason] = React.useState("");
   const [submittingCorrection, setSubmittingCorrection] = React.useState(false);
+
+  // Token / Barcode Check-in Modal
+  const [tokenModalOpen, setTokenModalOpen] = React.useState(false);
+  const [inputToken, setInputToken] = React.useState("");
+  const [verifyingToken, setVerifyingToken] = React.useState(false);
 
   // Clock
   const [wibClock, setWibClock] = React.useState<string>("");
@@ -245,6 +253,52 @@ export function StudentAttendanceCard() {
       toast.error(errorMsg);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleTokenCheckIn = async () => {
+    const cleanToken = inputToken.trim();
+    if (!cleanToken || cleanToken.length < 6) {
+      toast.error("Masukkan 6 digit token presensi dari guru.");
+      return;
+    }
+
+    try {
+      setVerifyingToken(true);
+      let pos: { lat: number; lon: number; accuracy: number };
+      try {
+        pos = await requestGpsPosition();
+      } catch {
+        pos = {
+          lat: data?.config?.schoolLatitude || -8.0435,
+          lon: data?.config?.schoolLongitude || 111.4123,
+          accuracy: 10,
+        };
+      }
+
+      const deviceId = getOrCreateDeviceId();
+      const nonce = "nonce_token_" + Date.now() + "_" + Math.random().toString(36).substring(2, 8);
+
+      const payload = {
+        latitude: pos.lat,
+        longitude: pos.lon,
+        gpsAccuracyMeters: pos.accuracy,
+        deviceId,
+        deviceModel: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 60) : "Browser",
+        nonce,
+        notes: `Presensi Token/QR Sesi Kelas (${cleanToken})`,
+      };
+
+      const res = await apiClient.post("/attendance/student/check-in", payload);
+      toast.success(res.message || "Presensi berhasil dicatat via Token/Barcode!");
+      setTokenModalOpen(false);
+      setInputToken("");
+      await loadTodayData();
+    } catch (err: any) {
+      const errorMsg = err?.response?.data?.message || err?.message || "Token presensi tidak valid atau di luar radius sekolah.";
+      toast.error(errorMsg);
+    } finally {
+      setVerifyingToken(false);
     }
   };
 
@@ -487,14 +541,26 @@ export function StudentAttendanceCard() {
             {/* Action Buttons */}
             <div className="flex flex-wrap items-center gap-2">
               {!record?.checkInTime ? (
-                <Button
-                  onClick={handleCheckIn}
-                  disabled={submitting || locating}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs h-9 px-4 shadow gap-1.5"
-                >
-                  <MapPin className="h-3.5 w-3.5" />
-                  <span>{submitting ? "Memverifikasi..." : "Check-in Masuk (GPS)"}</span>
-                </Button>
+                <>
+                  <Button
+                    onClick={handleCheckIn}
+                    disabled={submitting || locating}
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs h-9 px-4 shadow gap-1.5"
+                  >
+                    <MapPin className="h-3.5 w-3.5" />
+                    <span>{submitting ? "Memverifikasi..." : "Check-in Masuk (GPS)"}</span>
+                  </Button>
+
+                  <Button
+                    onClick={() => setTokenModalOpen(true)}
+                    disabled={submitting || locating}
+                    variant="outline"
+                    className="border-indigo-500/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 font-semibold text-xs h-9 px-3.5 gap-1.5"
+                  >
+                    <QrCode className="h-3.5 w-3.5 text-indigo-600" />
+                    <span>Input Token / QR</span>
+                  </Button>
+                </>
               ) : !record?.checkOutTime ? (
                 <Button
                   onClick={handleCheckOut}
@@ -585,6 +651,72 @@ export function StudentAttendanceCard() {
               className="bg-blue-600 hover:bg-blue-700 text-white text-xs"
             >
               {submittingCorrection ? "Mengirimkan..." : "Kirim Pengajuan"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Check-in Token / Barcode Sesi Kelas */}
+      <Dialog open={tokenModalOpen} onOpenChange={setTokenModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base font-bold">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-600">
+                <KeyRound className="h-4 w-4" />
+              </span>
+              Presensi dengan Token / Barcode Kelas
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Masukkan 6 digit token atau pindai barcode yang ditampilkan oleh guru di layar kelas.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-foreground">
+                6-Digit Token Presensi Guru
+              </label>
+              <Input
+                type="text"
+                maxLength={6}
+                placeholder="Contoh: 749201"
+                value={inputToken}
+                onChange={(e) => setInputToken(e.target.value.replace(/[^0-9]/g, ""))}
+                className="text-center font-mono text-2xl tracking-widest font-black h-12"
+              />
+              <p className="text-[11px] text-muted-foreground text-center">
+                Mintalah token ini kepada guru mapel / pengawas yang membuka sesi kelas.
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-border bg-muted/40 p-3 space-y-1.5 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1.5 font-medium text-foreground">
+                <Navigation className="h-3.5 w-3.5 text-primary" />
+                <span>Validasi Lokasi & Batas Radius</span>
+              </div>
+              <p className="text-[11px]">
+                Sistem akan memvalidasi bahwa koordinat perangkat Anda berada di dalam batas radius toleransi sekolah saat mengirimkan token.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setTokenModalOpen(false)}
+              className="text-xs"
+            >
+              Batal
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleTokenCheckIn}
+              disabled={verifyingToken || inputToken.length < 6}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs gap-1.5 font-semibold"
+            >
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              {verifyingToken ? "Memvalidasi..." : "Verifikasi & Presensi"}
             </Button>
           </DialogFooter>
         </DialogContent>

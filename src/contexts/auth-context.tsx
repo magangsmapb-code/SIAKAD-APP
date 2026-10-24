@@ -2,7 +2,15 @@
 
 import * as React from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { apiClient, setMemoryAccessToken, ApiError } from "@/lib/api-client";
+import {
+  apiClient,
+  setMemoryAccessToken,
+  getMemoryAccessToken,
+  getStoredAccessToken,
+  setStoredTokens,
+  clearStoredTokens,
+  ApiError,
+} from "@/lib/api-client";
 import { toast } from "sonner";
 
 export interface AuthUser {
@@ -37,6 +45,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const checkSession = React.useCallback(async () => {
     try {
+      const storedToken = getStoredAccessToken();
+      if (storedToken && !getMemoryAccessToken()) {
+        setMemoryAccessToken(storedToken);
+      }
       const res = await apiClient.get<AuthUser>('/auth/me');
       if (res.data) {
         setUser(res.data);
@@ -57,6 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     apiClient.setOnUnauthorized(() => {
       setUser(null);
       setMemoryAccessToken(null);
+      clearStoredTokens();
       if (!pathname.includes('/login')) {
         toast.error('Sesi login telah kedaluwarsa. Silakan masuk kembali.');
         router.push('/login');
@@ -83,8 +96,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         { username, password }
       );
 
-      if (res.data?.tokens?.accessToken) {
+      if (res.data?.tokens) {
         setMemoryAccessToken(res.data.tokens.accessToken);
+        setStoredTokens(res.data.tokens.accessToken, res.data.tokens.refreshToken);
       }
 
       if (res.data?.user) {
@@ -113,6 +127,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Ignore network errors on logout
     } finally {
       setMemoryAccessToken(null);
+      clearStoredTokens();
       setUser(null);
       toast.info('Anda telah keluar dari sistem SIAKAD.');
       router.push('/login');

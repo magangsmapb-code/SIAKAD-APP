@@ -51,6 +51,10 @@ export interface AttendanceSessionItem {
   isDraft: boolean;
   lastUpdated?: string;
   notes?: string;
+  token?: string;
+  barcode?: string;
+  radiusMeters?: number;
+  enableGps?: boolean;
   entries?: StudentAttendanceEntry[];
 }
 
@@ -289,6 +293,11 @@ export interface SchoolSetting {
   toleranceMinutes?: number;
   telegramNotification?: boolean;
   whatsappNotification?: boolean;
+  enableGps?: boolean;
+  schoolLatitude?: number;
+  schoolLongitude?: number;
+  maxGpsRadiusMeters?: number;
+  maxGpsAccuracyMeters?: number;
 }
 
 export interface SystemUser {

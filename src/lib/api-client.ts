@@ -36,16 +36,75 @@ export interface RequestOptions extends RequestInit {
   skipAuthRefresh?: boolean;
 }
 
-// In-memory token store (Never stored in localStorage to protect against XSS)
+// In-memory token store with resilient client-side persistence for Cross-Origin / Vercel hosting
+const STORAGE_ACCESS_KEY = 'siakad_access_token';
+const STORAGE_REFRESH_KEY = 'siakad_refresh_token';
+
 let memoryAccessToken: string | null = null;
 let isRefreshing = false;
 let refreshSubscribers: ((token: string | null) => void)[] = [];
 
+export function getStoredAccessToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    return localStorage.getItem(STORAGE_ACCESS_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function getStoredRefreshToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    return localStorage.getItem(STORAGE_REFRESH_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function setStoredTokens(accessToken: string | null, refreshToken?: string | null) {
+  if (typeof window === 'undefined') return;
+  try {
+    if (accessToken) {
+      localStorage.setItem(STORAGE_ACCESS_KEY, accessToken);
+    } else {
+      localStorage.removeItem(STORAGE_ACCESS_KEY);
+    }
+    if (refreshToken !== undefined) {
+      if (refreshToken) {
+        localStorage.setItem(STORAGE_REFRESH_KEY, refreshToken);
+      } else {
+        localStorage.removeItem(STORAGE_REFRESH_KEY);
+      }
+    }
+  } catch {
+    // Ignore storage quota errors
+  }
+}
+
+export function clearStoredTokens() {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.removeItem(STORAGE_ACCESS_KEY);
+    localStorage.removeItem(STORAGE_REFRESH_KEY);
+  } catch {
+    // Ignore
+  }
+}
+
 export function setMemoryAccessToken(token: string | null) {
   memoryAccessToken = token;
+  if (token) {
+    setStoredTokens(token);
+  } else {
+    clearStoredTokens();
+  }
 }
 
 export function getMemoryAccessToken(): string | null {
+  if (!memoryAccessToken) {
+    memoryAccessToken = getStoredAccessToken();
+  }
   return memoryAccessToken;
 }
 
@@ -157,10 +216,10 @@ class ApiClient {
       }
     }
 
-    // Attach in-memory access token if available
-    if (memoryAccessToken && !headers['Authorization']) {
-      headers['Authorization'] = `Bearer ${memoryAccessToken}`;
-      
+    // Attach access token if available (from memory or persistent store)
+    const activeToken = getMemoryAccessToken();
+    if (activeToken && !headers['Authorization']) {
+      headers['Authorization'] = `Bearer ${activeToken}`;
     }
 
     const url = this.buildUrl(endpoint);
@@ -262,14 +321,18 @@ class ApiClient {
     isRefreshing = true;
 
     try {
-      // Handshake refresh token endpoint
+      const storedRefreshToken = getStoredRefreshToken();
+
+      // Handshake refresh token endpoint (sends token via body + cookie for cross-domain compatibility)
       const refreshRes = await fetch(this.buildUrl('/auth/refresh'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Accept: 'application/json',
         },
-        body: JSON.stringify({}),
+        body: JSON.stringify({
+          refreshToken: storedRefreshToken || undefined,
+        }),
         credentials: 'include',
       });
 
@@ -279,9 +342,13 @@ class ApiClient {
 
       const refreshData = await refreshRes.json();
       const newAccessToken = refreshData?.data?.tokens?.accessToken || null;
+      const newRefreshToken = refreshData?.data?.tokens?.refreshToken || null;
 
       if (newAccessToken) {
         setMemoryAccessToken(newAccessToken);
+      }
+      if (newRefreshToken) {
+        setStoredTokens(newAccessToken, newRefreshToken);
       }
 
       isRefreshing = false;
@@ -295,6 +362,7 @@ class ApiClient {
     } catch (refreshErr) {
       isRefreshing = false;
       setMemoryAccessToken(null);
+      clearStoredTokens();
       onRefreshed(null);
 
       if (this.onUnauthorizedCallback) {

@@ -39,18 +39,18 @@ export class AuthController {
 
     const result = await this.authService.login(loginDto, ip, userAgent);
 
-    // Set secure HTTP-only cookies for web browsers (Next.js)
+    // Set secure HTTP-only cookies for web browsers (supports cross-origin Vercel <-> Render)
     const isProduction = process.env.NODE_ENV === 'production';
     res.cookie('access_token', result.tokens.accessToken, {
       httpOnly: true,
       secure: isProduction,
-      sameSite: 'lax',
+      sameSite: isProduction ? 'none' : 'lax',
       maxAge: 15 * 60 * 1000, // 15 mins
     });
     res.cookie('refresh_token', result.tokens.refreshToken, {
       httpOnly: true,
       secure: isProduction,
-      sameSite: 'lax',
+      sameSite: isProduction ? 'none' : 'lax',
       path: '/api/v1/auth/refresh',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
@@ -80,13 +80,13 @@ export class AuthController {
     res.cookie('access_token', result.tokens.accessToken, {
       httpOnly: true,
       secure: isProduction,
-      sameSite: 'lax',
+      sameSite: isProduction ? 'none' : 'lax',
       maxAge: 15 * 60 * 1000,
     });
     res.cookie('refresh_token', result.tokens.refreshToken, {
       httpOnly: true,
       secure: isProduction,
-      sameSite: 'lax',
+      sameSite: isProduction ? 'none' : 'lax',
       path: '/api/v1/auth/refresh',
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });

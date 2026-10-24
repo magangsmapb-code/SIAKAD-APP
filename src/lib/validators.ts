@@ -136,6 +136,11 @@ export const schoolSettingsSchema = z.object({
   toleranceMinutes: z.number().min(0).max(60),
   telegramNotification: z.boolean().default(true),
   whatsappNotification: z.boolean().default(true),
+  enableGps: z.boolean().default(true).optional(),
+  schoolLatitude: z.coerce.number().optional(),
+  schoolLongitude: z.coerce.number().optional(),
+  maxGpsRadiusMeters: z.coerce.number().min(10).max(5000).default(100).optional(),
+  maxGpsAccuracyMeters: z.coerce.number().min(5).max(500).default(50).optional(),
 });
 
 export type SchoolSettingsInput = z.infer<typeof schoolSettingsSchema>;
@@ -149,6 +154,10 @@ export const attendanceSessionFormSchema = z.object({
   endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Format jam selesai JJ:MM"),
   room: z.string().min(2, "Ruang kelas wajib diisi"),
   notes: z.string().optional(),
+  token: z.string().optional(),
+  barcode: z.string().optional(),
+  radiusMeters: z.coerce.number().min(10).max(5000).default(100).optional(),
+  enableGps: z.boolean().default(true).optional(),
 });
 
 export type AttendanceSessionFormInput = z.infer<typeof attendanceSessionFormSchema>;

@@ -18,6 +18,7 @@ import {
   MoreVertical,
   ChevronRight,
   Layers,
+  QrCode,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -42,6 +43,7 @@ import { useSchoolData } from "@/contexts/school-data-context";
 import { AttendanceSessionItem, SessionStatus } from "@/types";
 import { AttendanceFormModal } from "./attendance-form-modal";
 import { SessionCreateModal } from "./session-create-modal";
+import { SessionTokenModal } from "./session-token-modal";
 
 export function SessionList() {
   const { sessions, classes, teachers, subjects, updateSessionStatus } = useSchoolData();
@@ -58,6 +60,13 @@ export function SessionList() {
   const [activeSession, setActiveSession] = React.useState<AttendanceSessionItem | null>(null);
   const [formModalOpen, setFormModalOpen] = React.useState<boolean>(false);
   const [createModalOpen, setCreateModalOpen] = React.useState<boolean>(false);
+  const [tokenModalOpen, setTokenModalOpen] = React.useState<boolean>(false);
+  const [tokenSession, setTokenSession] = React.useState<AttendanceSessionItem | null>(null);
+
+  const handleOpenTokenModal = (session: AttendanceSessionItem) => {
+    setTokenSession(session);
+    setTokenModalOpen(true);
+  };
 
   // Filtered Sessions
   const filteredSessions = React.useMemo(() => {
@@ -496,6 +505,17 @@ export function SessionList() {
                     <div className="flex items-center gap-2 self-end md:self-auto shrink-0">
                       <Button
                         size="sm"
+                        variant="outline"
+                        onClick={() => handleOpenTokenModal(s)}
+                        className="text-xs gap-1.5 min-h-[38px] border-primary/30 hover:bg-primary/10 text-primary font-semibold"
+                        title="Tampilkan Token & Barcode Presensi Kelas"
+                      >
+                        <QrCode className="h-3.5 w-3.5 text-primary" />
+                        <span className="hidden sm:inline">Token & QR</span>
+                      </Button>
+
+                      <Button
+                        size="sm"
                         onClick={() => handleOpenAttendance(s)}
                         className={`text-xs gap-1.5 min-h-[38px] ${
                           s.isDraft
@@ -531,6 +551,9 @@ export function SessionList() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="text-xs">
                           <DropdownMenuLabel>Tindakan Sesi</DropdownMenuLabel>
+                          <DropdownMenuItem onClick={() => handleOpenTokenModal(s)}>
+                            <QrCode className="h-3.5 w-3.5 mr-2 text-primary" /> Tampilkan Token & QR
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleOpenAttendance(s)}>
                             <FileEdit className="h-3.5 w-3.5 mr-2" /> Buka Formulir
                           </DropdownMenuItem>
@@ -568,6 +591,19 @@ export function SessionList() {
           if (activeSession) {
             const updated = sessions.find((s) => s.id === activeSession.id);
             if (updated) setActiveSession(updated);
+          }
+        }}
+      />
+
+      {/* Session Token & QR Barcode Modal */}
+      <SessionTokenModal
+        session={tokenSession}
+        open={tokenModalOpen}
+        onOpenChange={setTokenModalOpen}
+        onRadiusChange={(sessionId, radiusMeters) => {
+          // Update local session radius in state
+          if (tokenSession && tokenSession.id === sessionId) {
+            setTokenSession({ ...tokenSession, radiusMeters });
           }
         }}
       />
