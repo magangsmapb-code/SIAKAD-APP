@@ -15,12 +15,17 @@ import { UpdateAttendanceConfigDto } from './dto/update-attendance-config.dto';
 import { CheckInDto } from './dto/check-in.dto';
 import { CreateCorrectionRequestDto } from './dto/create-correction.dto';
 import { ReviewCorrectionDto } from './dto/review-correction.dto';
+import { QueryAnomalyDto } from './dto/query-anomaly.dto';
+import { ResolveAnomalyDto } from './dto/resolve-anomaly.dto';
+import { RegisterDeviceDto } from './dto/register-device.dto';
 import {
   AttendanceStatus,
   Role,
   SessionStatus,
   AttendanceMethod,
   PermissionStatus,
+  AnomalySeverity,
+  AnomalyStatus,
 } from '@prisma/client';
 
 @Injectable()
@@ -29,6 +34,175 @@ export class AttendanceService {
     private prisma: PrismaService,
     private auditService: AuditService,
   ) {}
+
+  private usedNonces = new Map<string, number>();
+
+  private validateNonce(nonce: string | undefined, windowSeconds: number): void {
+    if (!nonce) return;
+    const now = Date.now();
+    const expiry = (windowSeconds || 60) * 1000;
+    for (const [key, timestamp] of this.usedNonces.entries()) {
+      if (now - timestamp > expiry) {
+        this.usedNonces.delete(key);
+      }
+    }
+
+    if (this.usedNonces.has(nonce)) {
+      throw new BadRequestException(
+        'Replay attack dicegah: Challenge/nonce ini telah digunakan sebelumnya.',
+      );
+    }
+    this.usedNonces.set(nonce, now);
+  }
+
+  async recordAnomaly(params: {
+    anomalyType: string;
+    severity?: AnomalySeverity;
+    userId: string;
+    userRole: string;
+    actorName: string;
+    targetId?: string;
+    details: string;
+    coords?: any;
+    deviceId?: string;
+    ipAddress?: string;
+    userAgent?: string;
+  }) {
+    try {
+      const anomaly = await this.prisma.attendanceAnomaly.create({
+        data: {
+          anomalyType: params.anomalyType,
+          severity: params.severity || AnomalySeverity.MEDIUM,
+          userId: params.userId,
+          userRole: params.userRole,
+          actorName: params.actorName,
+          targetId: params.targetId,
+          details: params.details,
+          coords: params.coords || undefined,
+          deviceId: params.deviceId,
+          ipAddress: params.ipAddress,
+          userAgent: params.userAgent,
+          status: AnomalyStatus.PENDING_REVIEW,
+        },
+      });
+
+      await this.auditService.record({
+        userId: params.userId,
+        actorName: params.actorName,
+        actorRole: params.userRole,
+        action: 'ATTENDANCE_ANOMALY_DETECTED',
+        entity: 'ATTENDANCE_ANOMALY',
+        entityId: anomaly.id,
+        newValue: {
+          anomalyType: params.anomalyType,
+          severity: params.severity || 'MEDIUM',
+          details: params.details,
+          coords: params.coords,
+          deviceId: params.deviceId,
+        },
+        ipAddress: params.ipAddress,
+        userAgent: params.userAgent,
+      });
+
+      return anomaly;
+    } catch {
+      // Fallback audit log if anomaly table is pending
+      return this.auditService.record({
+        userId: params.userId,
+        actorName: params.actorName,
+        actorRole: params.userRole,
+        action: 'ATTENDANCE_ANOMALY_DETECTED',
+        entity: 'ATTENDANCE_ANOMALY',
+        entityId: params.targetId || 'unknown',
+        newValue: {
+          anomalyType: params.anomalyType,
+          severity: params.severity || 'MEDIUM',
+          details: params.details,
+          coords: params.coords,
+          deviceId: params.deviceId,
+        },
+        ipAddress: params.ipAddress,
+        userAgent: params.userAgent,
+      });
+    }
+  }
+
+  private async validateDeviceBinding(
+    deviceId: string | undefined,
+    userId: string,
+    config: any,
+  ): Promise<void> {
+    if (!config.requireDeviceBinding) return;
+    if (!deviceId) {
+      throw new BadRequestException(
+        'Kebijakan sekolah mewajibkan absensi menggunakan perangkat terdaftar (Device ID tidak disertakan).',
+      );
+    }
+    const device = await this.prisma.attendanceDevice.findUnique({
+      where: {
+        userId_deviceId: {
+          userId,
+          deviceId,
+        },
+      },
+    });
+    if (!device || !device.isTrusted) {
+      throw new ForbiddenException(
+        'Perangkat ini belum terdaftar atau belum disetujui untuk akun Anda. Harap daftarkan perangkat terlebih dahulu.',
+      );
+    }
+    await this.prisma.attendanceDevice.update({
+      where: { id: device.id },
+      data: { lastUsedAt: new Date() },
+    });
+  }
+
+  private async checkMultiAccountDevice(
+    deviceId: string | undefined,
+    currentUserId: string,
+    ip?: string,
+    userAgent?: string,
+  ): Promise<void> {
+    if (!deviceId) return;
+    const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+
+    const [recentStudent, recentTeacher] = await Promise.all([
+      this.prisma.attendanceRecord.findFirst({
+        where: {
+          deviceId,
+          recordedAt: { gte: fifteenMinutesAgo },
+          student: { userId: { not: currentUserId } },
+        },
+        include: { student: { select: { fullName: true } } },
+      }),
+      this.prisma.teacherAttendance.findFirst({
+        where: {
+          deviceId,
+          createdAt: { gte: fifteenMinutesAgo },
+          teacher: { userId: { not: currentUserId } },
+        },
+        include: { teacher: { select: { fullName: true } } },
+      }),
+    ]);
+
+    if (recentStudent || recentTeacher) {
+      const prevName =
+        recentStudent?.student?.fullName ||
+        recentTeacher?.teacher?.fullName ||
+        'Pengguna Lain';
+      await this.recordAnomaly({
+        anomalyType: 'MULTI_ACCOUNT_DEVICE_BREACH',
+        severity: AnomalySeverity.HIGH,
+        userId: currentUserId,
+        userRole: 'UNKNOWN',
+        actorName: 'Pencegahan Titip Absen',
+        deviceId,
+        details: `Perangkat ${deviceId} terdeteksi digunakan untuk absensi multi-akun dalam 15 menit (sebelumnya digunakan oleh ${prevName}).`,
+        ipAddress: ip,
+        userAgent,
+      });
+    }
+  }
 
   // ---------------------------------------------------------------------------
   // Helper Geofencing & Time Utilities
@@ -122,6 +296,11 @@ export class AttendanceService {
           schoolLatitude: -8.0435,
           schoolLongitude: 111.4123,
           maxGpsRadiusMeters: 100,
+          maxGpsAccuracyMeters: 50,
+          requireDeviceBinding: false,
+          maxDevicesPerUser: 1,
+          preventSimultaneousLogins: true,
+          replayWindowSeconds: 60,
           allowedMethods: '["MANUAL_TEACHER","QR_CODE","RFID_CARD","FACE_RECOGNITION","SELF_MOBILE"]',
           allowStudentSelfCheckIn: false,
           allowTeacherSelfCheckIn: true,
@@ -211,22 +390,27 @@ export class AttendanceService {
       throw new BadRequestException('Data profil guru tidak ditemukan untuk akun ini.');
     }
 
+    // Anti-replay challenge
+    this.validateNonce(dto.nonce, config.replayWindowSeconds);
+
+    // Device binding check
+    await this.validateDeviceBinding(dto.deviceId, currentUser.id, config);
+
+    // Anti-proxy multi-account detection
+    await this.checkMultiAccountDevice(dto.deviceId, currentUser.id, ip, userAgent);
+
     // Time validation in WIB
     const nowTimeStr = this.getCurrentWibTime();
     if (nowTimeStr < config.checkInStartTime || nowTimeStr > config.checkInEndTime) {
-      await this.auditService.record({
+      await this.recordAnomaly({
+        anomalyType: 'OFF_SCHEDULE_CHECKIN',
+        severity: AnomalySeverity.MEDIUM,
         userId: currentUser.id,
+        userRole: currentUser.role,
         actorName: currentUser.fullName || currentUser.username,
-        actorRole: currentUser.role,
-        action: 'ATTENDANCE_ANOMALY_DETECTED',
-        entity: 'TEACHER_ATTENDANCE',
-        entityId: teacher.id,
-        newValue: {
-          anomalyType: 'OFF_SCHEDULE_CHECKIN',
-          severity: 'MEDIUM',
-          confidence: 'CONFIRMED',
-          details: `Percobaan check-in di luar jadwal (${nowTimeStr} WIB, batas operasional: ${config.checkInStartTime}-${config.checkInEndTime} WIB)`,
-        },
+        targetId: teacher.id,
+        details: `Percobaan check-in guru di luar jadwal (${nowTimeStr} WIB, batas operasional: ${config.checkInStartTime}-${config.checkInEndTime} WIB)`,
+        deviceId: dto.deviceId,
         ipAddress: ip,
         userAgent,
       });
@@ -246,33 +430,55 @@ export class AttendanceService {
     const status =
       nowTimeStr > config.lateThresholdTime ? AttendanceStatus.TERLAMBAT : AttendanceStatus.HADIR;
 
-    // GPS validation
+    // GPS validation & accuracy check
     let distanceMeters: number | null = null;
+    let isInsideGeofence: boolean | null = null;
     if (config.enableGps) {
       if (dto.latitude === undefined || dto.longitude === undefined) {
         throw new BadRequestException('Koordinat GPS wajib diaktifkan dan dikirimkan saat absensi mandiri.');
       }
+
+      if (dto.gpsAccuracyMeters !== undefined && dto.gpsAccuracyMeters > config.maxGpsAccuracyMeters) {
+        await this.recordAnomaly({
+          anomalyType: 'LOW_GPS_ACCURACY',
+          severity: AnomalySeverity.MEDIUM,
+          userId: currentUser.id,
+          userRole: currentUser.role,
+          actorName: currentUser.fullName || currentUser.username,
+          targetId: teacher.id,
+          details: `Akurasi sinyal GPS guru rendah (${dto.gpsAccuracyMeters}m, batas kebijakan ${config.maxGpsAccuracyMeters}m)`,
+          coords: { lat: dto.latitude, lon: dto.longitude, accuracy: dto.gpsAccuracyMeters },
+          deviceId: dto.deviceId,
+          ipAddress: ip,
+          userAgent,
+        });
+
+        if (dto.gpsAccuracyMeters > config.maxGpsAccuracyMeters * 2) {
+          throw new BadRequestException(
+            `Akurasi sinyal GPS perangkat Anda terlalu rendah (${dto.gpsAccuracyMeters} meter, batas maksimal ${config.maxGpsAccuracyMeters} meter). Harap keluar ke ruang terbuka untuk mendapatkan sinyal GPS akurat.`,
+          );
+        }
+      }
+
       distanceMeters = this.calculateDistance(
         config.schoolLatitude,
         config.schoolLongitude,
         dto.latitude,
         dto.longitude,
       );
-      if (distanceMeters > config.maxGpsRadiusMeters) {
-        await this.auditService.record({
+      isInsideGeofence = distanceMeters <= config.maxGpsRadiusMeters;
+
+      if (!isInsideGeofence) {
+        await this.recordAnomaly({
+          anomalyType: 'GEOFENCE_RADIUS_BREACH',
+          severity: AnomalySeverity.HIGH,
           userId: currentUser.id,
+          userRole: currentUser.role,
           actorName: currentUser.fullName || currentUser.username,
-          actorRole: currentUser.role,
-          action: 'ATTENDANCE_ANOMALY_DETECTED',
-          entity: 'TEACHER_ATTENDANCE',
-          entityId: teacher.id,
-          newValue: {
-            anomalyType: 'GEOFENCE_RADIUS_BREACH',
-            severity: 'HIGH',
-            confidence: 'CONFIRMED',
-            details: `Posisi di luar perimeter (${distanceMeters}m dari pusat sekolah, batas ${config.maxGpsRadiusMeters}m)`,
-            coords: { lat: dto.latitude, lon: dto.longitude },
-          },
+          targetId: teacher.id,
+          details: `Posisi di luar perimeter (${distanceMeters}m dari pusat sekolah, batas ${config.maxGpsRadiusMeters}m)`,
+          coords: { lat: dto.latitude, lon: dto.longitude, accuracy: dto.gpsAccuracyMeters },
+          deviceId: dto.deviceId,
           ipAddress: ip,
           userAgent,
         });
@@ -297,19 +503,15 @@ export class AttendanceService {
     });
 
     if (existing) {
-      await this.auditService.record({
+      await this.recordAnomaly({
+        anomalyType: 'DUPLICATE_CHECKIN_ATTEMPT',
+        severity: AnomalySeverity.LOW,
         userId: currentUser.id,
+        userRole: currentUser.role,
         actorName: currentUser.fullName || currentUser.username,
-        actorRole: currentUser.role,
-        action: 'ATTENDANCE_ANOMALY_DETECTED',
-        entity: 'TEACHER_ATTENDANCE',
-        entityId: teacher.id,
-        newValue: {
-          anomalyType: 'DUPLICATE_CHECKIN_ATTEMPT',
-          severity: 'LOW',
-          confidence: 'CONFIRMED',
-          details: 'Percobaan check-in ganda oleh guru pada hari yang sama',
-        },
+        targetId: teacher.id,
+        details: 'Percobaan check-in ganda oleh guru pada hari yang sama',
+        deviceId: dto.deviceId,
         ipAddress: ip,
         userAgent,
       });
@@ -328,7 +530,14 @@ export class AttendanceService {
         method: AttendanceMethod.SELF_MOBILE,
         latitude: dto.latitude,
         longitude: dto.longitude,
+        gpsAccuracyMeters: dto.gpsAccuracyMeters,
         distanceMeters,
+        isInsideGeofence: isInsideGeofence ?? true,
+        deviceId: dto.deviceId,
+        deviceModel: dto.deviceModel,
+        ipAddress: ip,
+        userAgent,
+        nonce: dto.nonce,
         notes: dto.notes,
       },
       include: {
@@ -347,6 +556,7 @@ export class AttendanceService {
         status: attendance.status,
         time: attendance.checkInTime,
         distanceMeters,
+        deviceId: dto.deviceId,
       },
       ipAddress: ip,
       userAgent,
@@ -451,7 +661,14 @@ export class AttendanceService {
         checkOutStartTime: config.checkOutStartTime,
         checkOutEndTime: config.checkOutEndTime,
         enableGps: config.enableGps,
+        schoolLatitude: config.schoolLatitude,
+        schoolLongitude: config.schoolLongitude,
         maxGpsRadiusMeters: config.maxGpsRadiusMeters,
+        maxGpsAccuracyMeters: config.maxGpsAccuracyMeters,
+        allowTeacherSelfCheckIn: config.allowTeacherSelfCheckIn,
+        requireDeviceBinding: config.requireDeviceBinding,
+        maintenanceMode: config.maintenanceMode,
+        maintenanceMessage: config.maintenanceMessage,
       },
       currentWibTime: this.getCurrentWibTime(),
     };
@@ -523,22 +740,27 @@ export class AttendanceService {
       throw new BadRequestException('Data profil siswa tidak ditemukan untuk akun ini.');
     }
 
+    // Anti-replay challenge
+    this.validateNonce(dto.nonce, config.replayWindowSeconds);
+
+    // Device binding check
+    await this.validateDeviceBinding(dto.deviceId, currentUser.id, config);
+
+    // Anti-proxy multi-account detection
+    await this.checkMultiAccountDevice(dto.deviceId, currentUser.id, ip, userAgent);
+
     // Time validation in WIB
     const nowTimeStr = this.getCurrentWibTime();
     if (nowTimeStr < config.checkInStartTime || nowTimeStr > config.checkInEndTime) {
-      await this.auditService.record({
+      await this.recordAnomaly({
+        anomalyType: 'OFF_SCHEDULE_CHECKIN',
+        severity: AnomalySeverity.MEDIUM,
         userId: currentUser.id,
+        userRole: currentUser.role,
         actorName: currentUser.fullName || currentUser.username,
-        actorRole: currentUser.role,
-        action: 'ATTENDANCE_ANOMALY_DETECTED',
-        entity: 'STUDENT_ATTENDANCE',
-        entityId: student.id,
-        newValue: {
-          anomalyType: 'OFF_SCHEDULE_CHECKIN',
-          severity: 'MEDIUM',
-          confidence: 'CONFIRMED',
-          details: `Percobaan check-in mandiri murid di luar jadwal (${nowTimeStr} WIB, batas: ${config.checkInStartTime}-${config.checkInEndTime} WIB)`,
-        },
+        targetId: student.id,
+        details: `Percobaan check-in mandiri murid di luar jadwal (${nowTimeStr} WIB, batas: ${config.checkInStartTime}-${config.checkInEndTime} WIB)`,
+        deviceId: dto.deviceId,
         ipAddress: ip,
         userAgent,
       });
@@ -557,38 +779,61 @@ export class AttendanceService {
     const status =
       nowTimeStr > config.lateThresholdTime ? AttendanceStatus.TERLAMBAT : AttendanceStatus.HADIR;
 
-    // GPS validation
+    // GPS validation & accuracy check
+    let distanceMeters: number | null = null;
+    let isInsideGeofence: boolean | null = null;
     if (config.enableGps) {
       if (dto.latitude === undefined || dto.longitude === undefined) {
         throw new BadRequestException('Koordinat GPS wajib diaktifkan dan dikirimkan saat absensi mandiri.');
       }
-      const distance = this.calculateDistance(
+
+      if (dto.gpsAccuracyMeters !== undefined && dto.gpsAccuracyMeters > config.maxGpsAccuracyMeters) {
+        await this.recordAnomaly({
+          anomalyType: 'LOW_GPS_ACCURACY',
+          severity: AnomalySeverity.MEDIUM,
+          userId: currentUser.id,
+          userRole: currentUser.role,
+          actorName: currentUser.fullName || currentUser.username,
+          targetId: student.id,
+          details: `Akurasi sinyal GPS siswa rendah (${dto.gpsAccuracyMeters}m, batas kebijakan ${config.maxGpsAccuracyMeters}m)`,
+          coords: { lat: dto.latitude, lon: dto.longitude, accuracy: dto.gpsAccuracyMeters },
+          deviceId: dto.deviceId,
+          ipAddress: ip,
+          userAgent,
+        });
+
+        if (dto.gpsAccuracyMeters > config.maxGpsAccuracyMeters * 2) {
+          throw new BadRequestException(
+            `Akurasi sinyal GPS perangkat Anda terlalu rendah (${dto.gpsAccuracyMeters} meter, batas toleransi ${config.maxGpsAccuracyMeters} meter). Harap keluar ke ruang terbuka untuk mendapatkan sinyal GPS akurat.`,
+          );
+        }
+      }
+
+      distanceMeters = this.calculateDistance(
         config.schoolLatitude,
         config.schoolLongitude,
         dto.latitude,
         dto.longitude,
       );
-      if (distance > config.maxGpsRadiusMeters) {
-        await this.auditService.record({
+      isInsideGeofence = distanceMeters <= config.maxGpsRadiusMeters;
+
+      if (!isInsideGeofence) {
+        await this.recordAnomaly({
+          anomalyType: 'GEOFENCE_RADIUS_BREACH',
+          severity: AnomalySeverity.HIGH,
           userId: currentUser.id,
+          userRole: currentUser.role,
           actorName: currentUser.fullName || currentUser.username,
-          actorRole: currentUser.role,
-          action: 'ATTENDANCE_ANOMALY_DETECTED',
-          entity: 'STUDENT_ATTENDANCE',
-          entityId: student.id,
-          newValue: {
-            anomalyType: 'GEOFENCE_RADIUS_BREACH',
-            severity: 'HIGH',
-            confidence: 'CONFIRMED',
-            details: `Posisi murid di luar perimeter (${distance}m dari pusat sekolah, batas toleransi ${config.maxGpsRadiusMeters}m)`,
-            coords: { lat: dto.latitude, lon: dto.longitude },
-          },
+          targetId: student.id,
+          details: `Posisi murid di luar perimeter (${distanceMeters}m dari pusat sekolah, batas toleransi ${config.maxGpsRadiusMeters}m)`,
+          coords: { lat: dto.latitude, lon: dto.longitude, accuracy: dto.gpsAccuracyMeters },
+          deviceId: dto.deviceId,
           ipAddress: ip,
           userAgent,
         });
 
         throw new BadRequestException(
-          `Posisi Anda berada di luar area sekolah (${distance} meter, batas ${config.maxGpsRadiusMeters} meter).`,
+          `Posisi Anda berada di luar area sekolah (${distanceMeters} meter, batas ${config.maxGpsRadiusMeters} meter).`,
         );
       }
     }
@@ -642,19 +887,15 @@ export class AttendanceService {
     });
 
     if (existing && existing.checkInTime) {
-      await this.auditService.record({
+      await this.recordAnomaly({
+        anomalyType: 'DUPLICATE_CHECKIN_ATTEMPT',
+        severity: AnomalySeverity.LOW,
         userId: currentUser.id,
+        userRole: currentUser.role,
         actorName: currentUser.fullName || currentUser.username,
-        actorRole: currentUser.role,
-        action: 'ATTENDANCE_ANOMALY_DETECTED',
-        entity: 'STUDENT_ATTENDANCE',
-        entityId: student.id,
-        newValue: {
-          anomalyType: 'DUPLICATE_CHECKIN_ATTEMPT',
-          severity: 'LOW',
-          confidence: 'CONFIRMED',
-          details: 'Percobaan check-in ganda oleh murid pada hari yang sama',
-        },
+        targetId: student.id,
+        details: 'Percobaan check-in ganda oleh murid pada hari yang sama',
+        deviceId: dto.deviceId,
         ipAddress: ip,
         userAgent,
       });
@@ -671,6 +912,16 @@ export class AttendanceService {
             status,
             checkInTime: new Date(),
             method: AttendanceMethod.SELF_MOBILE,
+            latitude: dto.latitude,
+            longitude: dto.longitude,
+            gpsAccuracyMeters: dto.gpsAccuracyMeters,
+            distanceMeters,
+            isInsideGeofence: isInsideGeofence ?? true,
+            deviceId: dto.deviceId,
+            deviceModel: dto.deviceModel,
+            ipAddress: ip,
+            userAgent,
+            nonce: dto.nonce,
             notes: dto.notes,
             recordedById: currentUser.id,
             updatedAt: new Date(),
@@ -683,6 +934,16 @@ export class AttendanceService {
             status,
             checkInTime: new Date(),
             method: AttendanceMethod.SELF_MOBILE,
+            latitude: dto.latitude,
+            longitude: dto.longitude,
+            gpsAccuracyMeters: dto.gpsAccuracyMeters,
+            distanceMeters,
+            isInsideGeofence: isInsideGeofence ?? true,
+            deviceId: dto.deviceId,
+            deviceModel: dto.deviceModel,
+            ipAddress: ip,
+            userAgent,
+            nonce: dto.nonce,
             notes: dto.notes,
             recordedById: currentUser.id,
           },
@@ -695,12 +956,97 @@ export class AttendanceService {
       action: 'STUDENT_CHECKIN',
       entity: 'ATTENDANCE_RECORD',
       entityId: record.id,
-      newValue: { status: record.status, checkInTime: record.checkInTime },
+      newValue: {
+        status: record.status,
+        checkInTime: record.checkInTime,
+        distanceMeters,
+        deviceId: dto.deviceId,
+      },
       ipAddress: ip,
       userAgent,
     });
 
     return record;
+  }
+
+  async studentCheckOut(dto: CheckInDto, currentUser: any, ip?: string, userAgent?: string) {
+    const config = await this.getAttendanceConfig();
+
+    if (config.maintenanceMode) {
+      throw new ForbiddenException(
+        `Fitur absensi sedang dalam pemeliharaan (Maintenance Mode): ${config.maintenanceMessage || 'Mohon menunggu beberapa saat.'}`,
+      );
+    }
+
+    let student = currentUser.student;
+    if (!student && currentUser.studentId) {
+      student = await this.prisma.student.findUnique({ where: { id: currentUser.studentId } });
+    }
+    if (!student) {
+      student = await this.prisma.student.findFirst({ where: { userId: currentUser.id } });
+    }
+    if (!student) {
+      throw new BadRequestException('Data profil siswa tidak ditemukan.');
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const record = await this.prisma.attendanceRecord.findFirst({
+      where: {
+        studentId: student.id,
+        session: { classId: student.classId, date: today },
+      },
+    });
+
+    if (!record || !record.checkInTime) {
+      throw new BadRequestException('Anda belum melakukan absensi masuk hari ini. Tidak dapat melakukan check-out.');
+    }
+
+    if (record.checkOutTime) {
+      throw new BadRequestException('Anda sudah melakukan check-out kepulangan hari ini.');
+    }
+
+    const nowTimeStr = this.getCurrentWibTime();
+    if (nowTimeStr < config.checkOutStartTime) {
+      throw new BadRequestException(
+        `Waktu check-out pulang belum dibuka. Jam pulang dimulai pukul ${config.checkOutStartTime} WIB (Waktu server saat ini: ${nowTimeStr} WIB).`,
+      );
+    }
+
+    let distanceMeters: number | null = null;
+    let isInsideGeofence: boolean | null = null;
+    if (config.enableGps && dto.latitude !== undefined && dto.longitude !== undefined) {
+      distanceMeters = this.calculateDistance(
+        config.schoolLatitude,
+        config.schoolLongitude,
+        dto.latitude,
+        dto.longitude,
+      );
+      isInsideGeofence = distanceMeters <= config.maxGpsRadiusMeters;
+    }
+
+    const updated = await this.prisma.attendanceRecord.update({
+      where: { id: record.id },
+      data: {
+        checkOutTime: new Date(),
+        updatedAt: new Date(),
+      },
+    });
+
+    await this.auditService.record({
+      userId: currentUser.id,
+      actorName: currentUser.fullName || currentUser.username,
+      actorRole: currentUser.role,
+      action: 'STUDENT_CHECKOUT',
+      entity: 'ATTENDANCE_RECORD',
+      entityId: record.id,
+      newValue: { checkOutTime: updated.checkOutTime, distanceMeters },
+      ipAddress: ip,
+      userAgent,
+    });
+
+    return updated;
   }
 
   async getStudentToday(currentUser: any) {
@@ -746,9 +1092,17 @@ export class AttendanceService {
         checkInStartTime: config.checkInStartTime,
         checkInEndTime: config.checkInEndTime,
         lateThresholdTime: config.lateThresholdTime,
+        checkOutStartTime: config.checkOutStartTime,
+        checkOutEndTime: config.checkOutEndTime,
         allowStudentSelfCheckIn: config.allowStudentSelfCheckIn,
         enableGps: config.enableGps,
+        schoolLatitude: config.schoolLatitude,
+        schoolLongitude: config.schoolLongitude,
         maxGpsRadiusMeters: config.maxGpsRadiusMeters,
+        maxGpsAccuracyMeters: config.maxGpsAccuracyMeters,
+        requireDeviceBinding: config.requireDeviceBinding,
+        maintenanceMode: config.maintenanceMode,
+        maintenanceMessage: config.maintenanceMessage,
       },
       currentWibTime: this.getCurrentWibTime(),
     };
@@ -1601,19 +1955,52 @@ export class AttendanceService {
     };
   }
 
-  async getAttendanceAnomalies(query?: { page?: number; limit?: number }) {
+  async getAttendanceAnomalies(query?: QueryAnomalyDto) {
     const page = query?.page ? Number(query.page) : 1;
     const limit = query?.limit ? Number(query.limit) : 20;
     const skip = (page - 1) * limit;
 
-    const where = {
+    const where: any = {};
+    if (query?.severity) where.severity = query.severity;
+    if (query?.status) where.status = query.status;
+    if (query?.anomalyType) where.anomalyType = query.anomalyType;
+    if (query?.userId) where.userId = query.userId;
+
+    try {
+      const [total, data] = await Promise.all([
+        this.prisma.attendanceAnomaly.count({ where }),
+        this.prisma.attendanceAnomaly.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy: { createdAt: 'desc' },
+        }),
+      ]);
+
+      if (total > 0) {
+        return {
+          data,
+          meta: {
+            page,
+            limit,
+            total,
+            totalPages: Math.ceil(total / limit),
+          },
+        };
+      }
+    } catch {
+      // Fallback to auditLog if table is newly migrating
+    }
+
+    // Fallback to auditLog
+    const auditWhere = {
       action: { in: ['ATTENDANCE_ANOMALY_DETECTED', 'SECURITY_TOKEN_REUSE_DETECTED'] },
     };
 
-    const [total, logs] = await Promise.all([
-      this.prisma.auditLog.count({ where }),
+    const [totalAudit, logs] = await Promise.all([
+      this.prisma.auditLog.count({ where: auditWhere }),
       this.prisma.auditLog.findMany({
-        where,
+        where: auditWhere,
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
@@ -1624,16 +2011,17 @@ export class AttendanceService {
       const payload: any = log.newValue || {};
       return {
         id: log.id,
-        timestamp: log.createdAt,
+        createdAt: log.createdAt,
         actorName: log.actorName,
-        actorRole: log.actorRole,
+        userRole: log.actorRole,
         action: log.action,
-        entity: log.entity,
+        userId: log.userId || 'system',
         anomalyType: payload.anomalyType || 'SECURITY_ALERT',
         severity: payload.severity || 'MEDIUM',
-        confidence: payload.confidence || 'SUSPICIOUS',
+        status: 'PENDING_REVIEW',
         details: payload.details || 'Pola akses absensi tidak wajar terdeteksi',
         coords: payload.coords || null,
+        deviceId: payload.deviceId || null,
         ipAddress: log.ipAddress,
         userAgent: log.userAgent,
       };
@@ -1644,9 +2032,120 @@ export class AttendanceService {
       meta: {
         page,
         limit,
-        total,
-        totalPages: Math.ceil(total / limit),
+        total: totalAudit,
+        totalPages: Math.ceil(totalAudit / limit),
       },
     };
+  }
+
+  async resolveAnomaly(
+    id: string,
+    dto: ResolveAnomalyDto,
+    currentUser: any,
+    ip?: string,
+    userAgent?: string,
+  ) {
+    const anomaly = await this.prisma.attendanceAnomaly.findUnique({
+      where: { id },
+    });
+    if (!anomaly) {
+      throw new NotFoundException('Data anomali absensi tidak ditemukan.');
+    }
+
+    const updated = await this.prisma.attendanceAnomaly.update({
+      where: { id },
+      data: {
+        status: dto.status,
+        reviewNotes: dto.reviewNotes,
+        reviewedById: currentUser.id,
+        reviewedAt: new Date(),
+      },
+    });
+
+    await this.auditService.record({
+      userId: currentUser.id,
+      actorName: currentUser.fullName || currentUser.username,
+      actorRole: currentUser.role,
+      action: 'ATTENDANCE_ANOMALY_RESOLVED',
+      entity: 'ATTENDANCE_ANOMALY',
+      entityId: anomaly.id,
+      oldValue: { status: anomaly.status, reviewNotes: anomaly.reviewNotes },
+      newValue: { status: updated.status, reviewNotes: updated.reviewNotes },
+      ipAddress: ip,
+      userAgent,
+    });
+
+    return updated;
+  }
+
+  async registerDevice(
+    dto: RegisterDeviceDto,
+    currentUser: any,
+    ip?: string,
+    userAgent?: string,
+  ) {
+    const config = await this.getAttendanceConfig();
+    const existingCount = await this.prisma.attendanceDevice.count({
+      where: { userId: currentUser.id },
+    });
+
+    const alreadyRegistered = await this.prisma.attendanceDevice.findUnique({
+      where: {
+        userId_deviceId: {
+          userId: currentUser.id,
+          deviceId: dto.deviceId,
+        },
+      },
+    });
+
+    if (!alreadyRegistered && existingCount >= config.maxDevicesPerUser) {
+      throw new BadRequestException(
+        `Batas maksimum perangkat terdaftar telah tercapai (${config.maxDevicesPerUser} perangkat). Hubungi administrator untuk mereset perangkat.`,
+      );
+    }
+
+    const device = await this.prisma.attendanceDevice.upsert({
+      where: {
+        userId_deviceId: {
+          userId: currentUser.id,
+          deviceId: dto.deviceId,
+        },
+      },
+      create: {
+        userId: currentUser.id,
+        deviceId: dto.deviceId,
+        deviceModel: dto.deviceModel,
+        osVersion: dto.osVersion,
+        appVersion: dto.appVersion,
+        isTrusted: true,
+      },
+      update: {
+        deviceModel: dto.deviceModel || undefined,
+        osVersion: dto.osVersion || undefined,
+        appVersion: dto.appVersion || undefined,
+        lastUsedAt: new Date(),
+      },
+    });
+
+    await this.auditService.record({
+      userId: currentUser.id,
+      actorName: currentUser.fullName || currentUser.username,
+      actorRole: currentUser.role,
+      action: 'ATTENDANCE_DEVICE_REGISTERED',
+      entity: 'ATTENDANCE_DEVICE',
+      entityId: device.id,
+      newValue: { deviceId: device.deviceId, model: device.deviceModel },
+      ipAddress: ip,
+      userAgent,
+    });
+
+    return device;
+  }
+
+  async getUserDevices(currentUser: any) {
+    return this.prisma.attendanceDevice.findMany({
+      where: { userId: currentUser.id },
+      orderBy: { lastUsedAt: 'desc' },
+    });
   }
 }

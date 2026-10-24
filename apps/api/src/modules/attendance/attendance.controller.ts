@@ -21,6 +21,9 @@ import { UpdateAttendanceConfigDto } from './dto/update-attendance-config.dto';
 import { CheckInDto } from './dto/check-in.dto';
 import { CreateCorrectionRequestDto } from './dto/create-correction.dto';
 import { ReviewCorrectionDto } from './dto/review-correction.dto';
+import { QueryAnomalyDto } from './dto/query-anomaly.dto';
+import { ResolveAnomalyDto } from './dto/resolve-anomaly.dto';
+import { RegisterDeviceDto } from './dto/register-device.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
@@ -75,14 +78,60 @@ export class AttendanceController {
   @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.PRINCIPAL, Role.DEVELOPER)
   @Permission('attendance.view_audit_log')
   @ApiOperation({ summary: 'Daftar anomali dan indikasi pelanggaran absensi untuk tinjauan manusia' })
-  async getAttendanceAnomalies(
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
-  ) {
-    const result = await this.attendanceService.getAttendanceAnomalies({ page, limit });
+  async getAttendanceAnomalies(@Query() query: QueryAnomalyDto) {
+    const result = await this.attendanceService.getAttendanceAnomalies(query);
     return {
       message: 'Daftar anomali presensi berhasil dimuat',
       ...result,
+    };
+  }
+
+  @Patch('anomalies/:id/resolve')
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.PRINCIPAL, Role.DEVELOPER)
+  @Permission('attendance.manage_settings')
+  @ApiOperation({ summary: 'Tinjau dan selesaikan anomali absensi (audit investigasi)' })
+  async resolveAnomaly(
+    @Param('id') id: string,
+    @Body() dto: ResolveAnomalyDto,
+    @CurrentUser() user: any,
+    @Req() req: Request,
+  ) {
+    const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
+    const userAgent = req.headers['user-agent'] || 'Unknown';
+
+    const result = await this.attendanceService.resolveAnomaly(id, dto, user, ip, userAgent);
+    return {
+      message: 'Status anomali absensi berhasil diperbarui',
+      data: result,
+    };
+  }
+
+  @Post('devices/register')
+  @Permission('attendance.view_own')
+  @ApiOperation({ summary: 'Daftarkan perangkat untuk absensi mandiri' })
+  async registerDevice(
+    @Body() dto: RegisterDeviceDto,
+    @CurrentUser() user: any,
+    @Req() req: Request,
+  ) {
+    const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
+    const userAgent = req.headers['user-agent'] || 'Unknown';
+
+    const result = await this.attendanceService.registerDevice(dto, user, ip, userAgent);
+    return {
+      message: 'Perangkat absensi berhasil didaftarkan',
+      data: result,
+    };
+  }
+
+  @Get('devices/me')
+  @Permission('attendance.view_own')
+  @ApiOperation({ summary: 'Daftar perangkat terdaftar milik pengguna saat ini' })
+  async getUserDevices(@CurrentUser() user: any) {
+    const result = await this.attendanceService.getUserDevices(user);
+    return {
+      message: 'Daftar perangkat pengguna berhasil dimuat',
+      data: result,
     };
   }
 
@@ -176,6 +225,25 @@ export class AttendanceController {
     const result = await this.attendanceService.studentCheckIn(dto, user, ip, userAgent);
     return {
       message: 'Presensi mandiri siswa berhasil dicatat',
+      data: result,
+    };
+  }
+
+  @Post('student/check-out')
+  @Roles(Role.STUDENT)
+  @Permission('attendance.student.check_in')
+  @ApiOperation({ summary: 'Check-out kepulangan mandiri siswa' })
+  async studentCheckOut(
+    @Body() dto: CheckInDto,
+    @CurrentUser() user: any,
+    @Req() req: Request,
+  ) {
+    const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
+    const userAgent = req.headers['user-agent'] || 'Unknown';
+
+    const result = await this.attendanceService.studentCheckOut(dto, user, ip, userAgent);
+    return {
+      message: 'Presensi keluar/pulang siswa berhasil dicatat',
       data: result,
     };
   }

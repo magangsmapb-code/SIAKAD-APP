@@ -79,6 +79,37 @@ export class UpdateAttendanceConfigDto {
   @Max(5000)
   maxGpsRadiusMeters?: number;
 
+  @ApiPropertyOptional({ example: 50, description: 'Maksimum akurasi GPS yang dapat diterima dalam meter' })
+  @IsOptional()
+  @IsNumber()
+  @Min(5)
+  @Max(500)
+  maxGpsAccuracyMeters?: number;
+
+  @ApiPropertyOptional({ example: false, description: 'Wajibkan pengikatan perangkat terdaftar (Device Binding)' })
+  @IsOptional()
+  @IsBoolean()
+  requireDeviceBinding?: boolean;
+
+  @ApiPropertyOptional({ example: 1, description: 'Jumlah maksimum perangkat aktif per pengguna' })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(5)
+  maxDevicesPerUser?: number;
+
+  @ApiPropertyOptional({ example: true, description: 'Cegah sesi login ganda bersamaan untuk 1 akun' })
+  @IsOptional()
+  @IsBoolean()
+  preventSimultaneousLogins?: boolean;
+
+  @ApiPropertyOptional({ example: 60, description: 'Jendela waktu toleransi nonce / replay request dalam detik' })
+  @IsOptional()
+  @IsNumber()
+  @Min(10)
+  @Max(600)
+  replayWindowSeconds?: number;
+
   @ApiPropertyOptional({
     example: '["MANUAL_TEACHER","QR_CODE","RFID_CARD","FACE_RECOGNITION","SELF_MOBILE"]',
     description: 'Metode absensi yang diizinkan dalam format JSON string',

@@ -22,6 +22,36 @@ export class CheckInDto {
   @IsEnum(AttendanceMethod)
   method?: AttendanceMethod;
 
+  @ApiPropertyOptional({ example: 12.5, description: 'Akurasi GPS perangkat dalam meter' })
+  @IsOptional()
+  @IsNumber()
+  gpsAccuracyMeters?: number;
+
+  @ApiPropertyOptional({ example: 'dev_pixel7_abc123', description: 'Identifier unik hardware/instalasi perangkat' })
+  @IsOptional()
+  @IsString()
+  deviceId?: string;
+
+  @ApiPropertyOptional({ example: 'Pixel 7 Pro', description: 'Model perangkat client' })
+  @IsOptional()
+  @IsString()
+  deviceModel?: string;
+
+  @ApiPropertyOptional({ example: 'Android 14', description: 'Versi sistem operasi client' })
+  @IsOptional()
+  @IsString()
+  osVersion?: string;
+
+  @ApiPropertyOptional({ example: '2.1.0', description: 'Versi aplikasi SIAKAD' })
+  @IsOptional()
+  @IsString()
+  appVersion?: string;
+
+  @ApiPropertyOptional({ example: 'nonce_9876543210', description: 'One-time challenge/nonce pencegah replay attack' })
+  @IsOptional()
+  @IsString()
+  nonce?: string;
+
   @ApiPropertyOptional({ example: 'Hadir apel pagi', description: 'Catatan tambahan keterangan presensi' })
   @IsOptional()
   @IsString()

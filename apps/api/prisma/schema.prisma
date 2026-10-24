@@ -77,7 +77,26 @@ enum AttendanceStatus {
   SAKIT
   IZIN
   ALPA
+  MENUNGGU_VERIFIKASI
+  DITOLAK
+  DIKOREKSI
 }
+
+enum AnomalySeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum AnomalyStatus {
+  PENDING_REVIEW
+  INVESTIGATING
+  RESOLVED_FALSE_POSITIVE
+  RESOLVED_CONFIRMED_FRAUD
+  DISMISSED
+}
+
 
 enum AttendanceMethod {
   MANUAL_TEACHER
@@ -132,6 +151,7 @@ model User {
   teacher   Teacher?
   student   Student?
   auditLogs AuditLog[]
+  devices   AttendanceDevice[]
 
   @@map("users")
 }
@@ -388,18 +408,29 @@ model AttendanceSession {
 }
 
 model AttendanceRecord {
-  id          String           @id @default(cuid())
-  sessionId   String
-  session     AttendanceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  studentId   String
-  student     Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  status      AttendanceStatus @default(HADIR)
-  checkInTime DateTime?
-  method      AttendanceMethod @default(MANUAL_TEACHER)
-  notes       String?
-  recordedAt  DateTime         @default(now())
-  recordedById String?
-  updatedAt   DateTime         @updatedAt
+  id                String           @id @default(cuid())
+  sessionId         String
+  session           AttendanceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  studentId         String
+  student           Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  status            AttendanceStatus @default(HADIR)
+  checkInTime       DateTime?
+  checkOutTime      DateTime?
+  method            AttendanceMethod @default(MANUAL_TEACHER)
+  latitude          Float?
+  longitude         Float?
+  gpsAccuracyMeters Float?
+  distanceMeters    Float?
+  isInsideGeofence  Boolean?
+  deviceId          String?
+  deviceModel       String?
+  ipAddress         String?
+  userAgent         String?
+  nonce             String?
+  notes             String?
+  recordedAt        DateTime         @default(now())
+  recordedById      String?
+  updatedAt         DateTime         @updatedAt
 
   corrections AttendanceCorrection[]
 
@@ -407,6 +438,8 @@ model AttendanceRecord {
   @@index([sessionId])
   @@index([studentId])
   @@index([status])
+  @@index([deviceId])
+  @@index([recordedAt])
   @@map("attendance_records")
 }
 
@@ -434,53 +467,111 @@ model AttendanceCorrection {
 }
 
 model TeacherAttendance {
-  id             String           @id @default(cuid())
-  teacherId      String
-  teacher        Teacher          @relation(fields: [teacherId], references: [id], onDelete: Cascade)
-  date           DateTime         @db.Date
-  checkInTime    DateTime
-  checkOutTime   DateTime?
-  status         AttendanceStatus @default(HADIR)
-  method         AttendanceMethod @default(MANUAL_TEACHER)
-  latitude       Float?
-  longitude      Float?
-  distanceMeters Float?
-  notes          String?
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+  id                String           @id @default(cuid())
+  teacherId         String
+  teacher           Teacher          @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  date              DateTime         @db.Date
+  checkInTime       DateTime
+  checkOutTime      DateTime?
+  status            AttendanceStatus @default(HADIR)
+  method            AttendanceMethod @default(MANUAL_TEACHER)
+  latitude          Float?
+  longitude         Float?
+  gpsAccuracyMeters Float?
+  distanceMeters    Float?
+  isInsideGeofence  Boolean?
+  deviceId          String?
+  deviceModel       String?
+  ipAddress         String?
+  userAgent         String?
+  nonce             String?
+  notes             String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
 
   @@unique([teacherId, date])
   @@index([teacherId])
   @@index([date])
+  @@index([deviceId])
   @@map("teacher_attendances")
 }
 
 model AttendanceConfig {
-  id                       String   @id @default(cuid())
-  checkInStartTime         String   @default("06:30")
-  checkInEndTime           String   @default("07:30")
-  lateThresholdTime        String   @default("07:00")
-  lateToleranceMinutes     Int      @default(15)
-  checkOutStartTime        String   @default("14:00")
-  checkOutEndTime          String   @default("16:00")
-  enableGps                Boolean  @default(false)
-  schoolLatitude           Float    @default(-8.0435)
-  schoolLongitude          Float    @default(111.4123)
-  maxGpsRadiusMeters       Int      @default(100)
-  allowedMethods           String   @default("[\"MANUAL_TEACHER\",\"QR_CODE\",\"RFID_CARD\",\"FACE_RECOGNITION\",\"SELF_MOBILE\"]")
-  allowStudentSelfCheckIn  Boolean  @default(false)
-  allowTeacherSelfCheckIn  Boolean  @default(true)
-  requirePhotoVerification Boolean  @default(false)
-  requireCorrectionApproval Boolean @default(true)
-  correctionApproverRole   String   @default("TEACHER_HOMEROOM")
-  maintenanceMode          Boolean  @default(false)
-  maintenanceMessage       String?
-  updatedById              String?
-  updatedByName            String?
-  updatedAt                DateTime @updatedAt
-  createdAt                DateTime @default(now())
+  id                        String   @id @default(cuid())
+  checkInStartTime          String   @default("06:30")
+  checkInEndTime            String   @default("07:30")
+  lateThresholdTime         String   @default("07:00")
+  lateToleranceMinutes      Int      @default(15)
+  checkOutStartTime         String   @default("14:00")
+  checkOutEndTime           String   @default("16:00")
+  enableGps                 Boolean  @default(false)
+  schoolLatitude            Float    @default(-8.0435)
+  schoolLongitude           Float    @default(111.4123)
+  maxGpsRadiusMeters        Int      @default(100)
+  maxGpsAccuracyMeters      Int      @default(50)
+  requireDeviceBinding      Boolean  @default(false)
+  maxDevicesPerUser         Int      @default(1)
+  preventSimultaneousLogins Boolean  @default(true)
+  replayWindowSeconds       Int      @default(60)
+  allowedMethods            String   @default("[\"MANUAL_TEACHER\",\"QR_CODE\",\"RFID_CARD\",\"FACE_RECOGNITION\",\"SELF_MOBILE\"]")
+  allowStudentSelfCheckIn   Boolean  @default(false)
+  allowTeacherSelfCheckIn   Boolean  @default(true)
+  requirePhotoVerification  Boolean  @default(false)
+  requireCorrectionApproval Boolean  @default(true)
+  correctionApproverRole    String   @default("TEACHER_HOMEROOM")
+  maintenanceMode           Boolean  @default(false)
+  maintenanceMessage        String?
+  updatedById               String?
+  updatedByName             String?
+  updatedAt                 DateTime @updatedAt
+  createdAt                 DateTime @default(now())
 
   @@map("attendance_configs")
+}
+
+model AttendanceAnomaly {
+  id           String          @id @default(cuid())
+  anomalyType  String
+  severity     AnomalySeverity @default(MEDIUM)
+  userId       String
+  userRole     String
+  actorName    String
+  targetId     String?
+  details      String
+  coords       Json?
+  deviceId     String?
+  ipAddress    String?
+  userAgent    String?
+  status       AnomalyStatus   @default(PENDING_REVIEW)
+  reviewedById String?
+  reviewedAt   DateTime?
+  reviewNotes  String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@index([userId])
+  @@index([anomalyType])
+  @@index([status])
+  @@index([createdAt])
+  @@map("attendance_anomalies")
+}
+
+model AttendanceDevice {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deviceId     String
+  deviceModel  String?
+  osVersion    String?
+  appVersion   String?
+  isTrusted    Boolean  @default(true)
+  registeredAt DateTime @default(now())
+  lastUsedAt   DateTime @default(now())
+
+  @@unique([userId, deviceId])
+  @@index([userId])
+  @@index([deviceId])
+  @@map("attendance_devices")
 }
 
 model PermissionRequest {

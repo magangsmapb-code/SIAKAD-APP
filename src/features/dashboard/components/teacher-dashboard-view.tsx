@@ -22,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { StatCard } from "@/components/shared/stat-card";
 import { useDemoRole } from "@/contexts/demo-role-context";
 import { toast } from "sonner";
+import { TeacherAttendanceCard } from "./teacher-attendance-card";
 
 export function TeacherDashboardView() {
   const { currentUser } = useDemoRole();
@@ -63,6 +64,9 @@ export function TeacherDashboardView() {
           </div>
         </div>
       </div>
+
+      {/* Teacher Daily Attendance Card */}
+      <TeacherAttendanceCard />
 
       {/* KPI Metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">

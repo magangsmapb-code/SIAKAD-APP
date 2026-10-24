@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { StatCard } from "@/components/shared/stat-card";
 import { useDemoRole } from "@/contexts/demo-role-context";
 import { toast } from "sonner";
+import { StudentAttendanceCard } from "./student-attendance-card";
 
 export function StudentDashboardView() {
   const { currentUser } = useDemoRole();
@@ -60,6 +61,9 @@ export function StudentDashboardView() {
           </div>
         </div>
       </div>
+
+      {/* Live Interactive Anti-Cheat Attendance Card */}
+      <StudentAttendanceCard />
 
       {/* Personal Attendance Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
