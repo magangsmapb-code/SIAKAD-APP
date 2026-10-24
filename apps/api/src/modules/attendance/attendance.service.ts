@@ -911,7 +911,7 @@ export class AttendanceService {
           data: {
             status,
             checkInTime: new Date(),
-            method: AttendanceMethod.SELF_MOBILE,
+            method: dto.method || AttendanceMethod.SELF_MOBILE,
             latitude: dto.latitude,
             longitude: dto.longitude,
             gpsAccuracyMeters: dto.gpsAccuracyMeters,
@@ -933,7 +933,7 @@ export class AttendanceService {
             studentId: student.id,
             status,
             checkInTime: new Date(),
-            method: AttendanceMethod.SELF_MOBILE,
+            method: dto.method || AttendanceMethod.SELF_MOBILE,
             latitude: dto.latitude,
             longitude: dto.longitude,
             gpsAccuracyMeters: dto.gpsAccuracyMeters,
