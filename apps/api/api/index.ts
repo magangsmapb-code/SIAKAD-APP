@@ -12,6 +12,14 @@ import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter
 const server: Express = express();
 let isReady = false;
 
+// Root & Docs Redirects
+server.get('/', (_req, res) => {
+  res.redirect('/api/v1');
+});
+server.get('/docs', (_req, res) => {
+  res.redirect('/api/v1/docs');
+});
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, new ExpressAdapter(server));
 
