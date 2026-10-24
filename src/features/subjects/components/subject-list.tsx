@@ -139,104 +139,188 @@ export function SubjectList() {
             onAction={handleResetFilters}
           />
         ) : (
-          <div className="overflow-x-auto rounded-md border border-border">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-muted/50 border-b border-border text-muted-foreground uppercase text-[10px] tracking-wider">
-                <tr>
-                  <th className="py-3 px-3.5 font-semibold">Kode Mapel</th>
-                  <th className="py-3 px-3 font-semibold">Nama Mata Pelajaran</th>
-                  <th className="py-3 px-3 font-semibold">Kategori</th>
-                  <th className="py-3 px-3 font-semibold">Alokasi Jam (JP)</th>
-                  <th className="py-3 px-3 font-semibold">Guru Pengampu</th>
-                  <th className="py-3 px-3 font-semibold">Status</th>
-                  <th className="py-3 px-3 text-right font-semibold">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/60">
-                {filteredSubjects.map((item) => {
-                  const isActive = item.isActive !== false;
-                  return (
-                    <tr key={item.id} className="hover:bg-muted/30 transition-colors">
-                      <td className="py-3 px-3.5 font-mono font-semibold text-primary">
-                        {item.code}
-                      </td>
-                      <td className="py-3 px-3 font-semibold text-foreground">
-                        {item.name}
-                      </td>
-                      <td className="py-3 px-3">
-                        <Badge
-                          variant={
-                            item.category === "WAJIB"
-                              ? "default"
-                              : item.category === "PEMINATAN"
-                              ? "secondary"
-                              : "outline"
-                          }
-                          className="text-[10px]"
-                        >
-                          {item.category.replace("_", " ")}
-                        </Badge>
-                      </td>
-                      <td className="py-3 px-3 font-mono">
-                        <span className="font-bold">{item.creditHours} JP</span> / minggu
-                      </td>
-                      <td className="py-3 px-3 text-muted-foreground">
-                        {item.teacherNames && item.teacherNames.length > 0 ? (
-                          <div className="flex flex-wrap gap-1 max-w-[220px]">
-                            {item.teacherNames.map((name, i) => (
-                              <Badge key={i} variant="outline" className="text-[10px]">
-                                {name}
-                              </Badge>
-                            ))}
-                          </div>
-                        ) : (
-                          <span>{item.teacherCount} Guru Terdaftar</span>
-                        )}
-                      </td>
-                      <td className="py-3 px-3">
-                        <Badge
-                          variant={isActive ? "hadir" : "alpa"}
-                          className="text-[10px]"
-                        >
-                          {isActive ? "Aktif" : "Non-Aktif"}
-                        </Badge>
-                      </td>
-                      <td className="py-3 px-3 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                            title="Edit Mapel"
-                            onClick={() => handleOpenEdit(item)}
+          <>
+            {/* ── Mobile Card View (< md) ── */}
+            <div className="md:hidden space-y-2">
+              {filteredSubjects.map((item) => {
+                const isActive = item.isActive !== false;
+                return (
+                  <div
+                    key={item.id}
+                    className="rounded-xl border border-border bg-card p-3.5 space-y-2.5 shadow-sm"
+                  >
+                    {/* Header row */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-mono text-xs font-bold text-primary">{item.code}</span>
+                          <Badge
+                            variant={
+                              item.category === "WAJIB"
+                                ? "default"
+                                : item.category === "PEMINATAN"
+                                ? "secondary"
+                                : "outline"
+                            }
+                            className="text-[10px]"
                           >
-                            <Edit className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className={`h-7 w-7 ${
-                              isActive
-                                ? "text-amber-600 hover:text-amber-700"
-                                : "text-emerald-600 hover:text-emerald-700"
-                            }`}
-                            title={isActive ? "Non-aktifkan Mapel" : "Aktifkan Mapel"}
-                            onClick={() => handleOpenToggleStatus(item)}
-                          >
-                            {isActive ? (
-                              <ToggleRight className="h-4 w-4" />
-                            ) : (
-                              <ToggleLeft className="h-4 w-4" />
-                            )}
-                          </Button>
+                            {item.category.replace("_", " ")}
+                          </Badge>
                         </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                        <p className="font-semibold text-sm text-foreground mt-0.5 leading-snug">
+                          {item.name}
+                        </p>
+                      </div>
+                      <Badge variant={isActive ? "hadir" : "alpa"} className="text-[10px] shrink-0">
+                        {isActive ? "Aktif" : "Non-Aktif"}
+                      </Badge>
+                    </div>
+
+                    {/* Detail row */}
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground border-t border-border/60 pt-2">
+                      <span className="font-mono font-bold text-foreground">{item.creditHours} JP/minggu</span>
+                      <span className="text-border">|</span>
+                      <span>
+                        {item.teacherNames && item.teacherNames.length > 0
+                          ? item.teacherNames.join(", ")
+                          : `${item.teacherCount} Guru`}
+                      </span>
+                    </div>
+
+                    {/* Action row */}
+                    <div className="flex items-center justify-end gap-1 border-t border-border/60 pt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-xs gap-1 text-muted-foreground"
+                        onClick={() => handleOpenEdit(item)}
+                      >
+                        <Edit className="h-3 w-3" />
+                        Edit
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className={`h-7 text-xs gap-1 ${
+                          isActive
+                            ? "text-amber-600 border-amber-200 hover:bg-amber-50"
+                            : "text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+                        }`}
+                        onClick={() => handleOpenToggleStatus(item)}
+                      >
+                        {isActive ? (
+                          <ToggleRight className="h-3.5 w-3.5" />
+                        ) : (
+                          <ToggleLeft className="h-3.5 w-3.5" />
+                        )}
+                        {isActive ? "Non-aktifkan" : "Aktifkan"}
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* ── Desktop Table View (≥ md) ── */}
+            <div className="hidden md:block overflow-x-auto rounded-md border border-border">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-muted/50 border-b border-border text-muted-foreground uppercase text-[10px] tracking-wider">
+                  <tr>
+                    <th className="py-3 px-3.5 font-semibold">Kode Mapel</th>
+                    <th className="py-3 px-3 font-semibold">Nama Mata Pelajaran</th>
+                    <th className="py-3 px-3 font-semibold">Kategori</th>
+                    <th className="py-3 px-3 font-semibold">Alokasi Jam (JP)</th>
+                    <th className="py-3 px-3 font-semibold">Guru Pengampu</th>
+                    <th className="py-3 px-3 font-semibold">Status</th>
+                    <th className="py-3 px-3 text-right font-semibold">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/60">
+                  {filteredSubjects.map((item) => {
+                    const isActive = item.isActive !== false;
+                    return (
+                      <tr key={item.id} className="hover:bg-muted/30 transition-colors">
+                        <td className="py-3 px-3.5 font-mono font-semibold text-primary">
+                          {item.code}
+                        </td>
+                        <td className="py-3 px-3 font-semibold text-foreground">
+                          {item.name}
+                        </td>
+                        <td className="py-3 px-3">
+                          <Badge
+                            variant={
+                              item.category === "WAJIB"
+                                ? "default"
+                                : item.category === "PEMINATAN"
+                                ? "secondary"
+                                : "outline"
+                            }
+                            className="text-[10px]"
+                          >
+                            {item.category.replace("_", " ")}
+                          </Badge>
+                        </td>
+                        <td className="py-3 px-3 font-mono">
+                          <span className="font-bold">{item.creditHours} JP</span> / minggu
+                        </td>
+                        <td className="py-3 px-3 text-muted-foreground">
+                          {item.teacherNames && item.teacherNames.length > 0 ? (
+                            <div className="flex flex-wrap gap-1 max-w-[220px]">
+                              {item.teacherNames.map((name, i) => (
+                                <Badge key={i} variant="outline" className="text-[10px]">
+                                  {name}
+                                </Badge>
+                              ))}
+                            </div>
+                          ) : (
+                            <span>{item.teacherCount} Guru Terdaftar</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-3">
+                          <Badge
+                            variant={isActive ? "hadir" : "alpa"}
+                            className="text-[10px]"
+                          >
+                            {isActive ? "Aktif" : "Non-Aktif"}
+                          </Badge>
+                        </td>
+                        <td className="py-3 px-3 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                              title="Edit Mapel"
+                              onClick={() => handleOpenEdit(item)}
+                            >
+                              <Edit className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className={`h-7 w-7 ${
+                                isActive
+                                  ? "text-amber-600 hover:text-amber-700"
+                                  : "text-emerald-600 hover:text-emerald-700"
+                              }`}
+                              title={isActive ? "Non-aktifkan Mapel" : "Aktifkan Mapel"}
+                              onClick={() => handleOpenToggleStatus(item)}
+                            >
+                              {isActive ? (
+                                <ToggleRight className="h-4 w-4" />
+                              ) : (
+                                <ToggleLeft className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </CardContent>
 

@@ -28,6 +28,7 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
 
   const isAllowed = React.useMemo(() => {
     if (!matchingItem || !matchingItem.roles) return true;
+    if (role === "DEVELOPER") return true;
     return matchingItem.roles.includes(role);
   }, [matchingItem, role]);
 

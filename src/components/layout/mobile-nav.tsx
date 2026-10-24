@@ -33,14 +33,17 @@ export function MobileNav({
 }: MobileNavProps) {
   const [internalOpen, setInternalOpen] = React.useState(false);
   const isControlled = controlledOpen !== undefined;
-  const open = isControlled ? controlledOpen : internalOpen;
-  const setOpen = (val: boolean) => {
-    if (isControlled && setControlledOpen) {
-      setControlledOpen(val);
-    } else {
-      setInternalOpen(val);
-    }
-  };
+  const isOpen = isControlled ? controlledOpen : internalOpen;
+  const setOpen = React.useCallback(
+    (val: boolean) => {
+      if (isControlled && setControlledOpen) {
+        setControlledOpen(val);
+      } else {
+        setInternalOpen(val);
+      }
+    },
+    [isControlled, setControlledOpen]
+  );
 
   const pathname = usePathname();
   const { role, currentUser, academicYear } = useDemoRole();
@@ -49,7 +52,7 @@ export function MobileNav({
   // Close drawer when route changes
   React.useEffect(() => {
     setOpen(false);
-  }, [pathname]);
+  }, [pathname, setOpen]);
 
   // Filter navigation sections based on active user role
   const filteredNavigation = React.useMemo(() => {
@@ -75,7 +78,7 @@ export function MobileNav({
         </Button>
       )}
 
-      {open && (
+      {isOpen && (
         <div className="fixed inset-0 z-50 flex">
           {/* Backdrop with fade-in */}
           <div
@@ -154,7 +157,7 @@ export function MobileNav({
                           key={item.href}
                           href={item.href}
                           className={cn(
-                            "flex items-center gap-3 rounded-lg px-3 py-2.5 text-xs font-medium transition-colors min-h-[42px]",
+                            "flex items-center gap-3 rounded-lg px-3 py-2.5 text-xs font-medium transition-colors min-h-[44px]",
                             isActive
                               ? "bg-primary text-primary-foreground font-semibold shadow-sm"
                               : "text-muted-foreground hover:bg-accent hover:text-foreground"

@@ -41,6 +41,7 @@ import { TableToolbar } from "@/components/shared/table-toolbar";
 import { Pagination } from "@/components/shared/pagination";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ConfirmationModal } from "@/components/shared/confirmation-modal";
+import { MobileDataCard } from "@/components/shared/mobile-data-list";
 import { UserProfile, UserRole } from "@/types";
 import { userAccountSchema, UserAccountInput } from "@/lib/validators";
 import { apiClient } from "@/lib/api-client";
@@ -404,36 +405,21 @@ export function UserManagement() {
               />
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs text-left min-w-[700px] data-tabular">
-                <thead>
-                  <tr className="border-b border-border bg-muted/40 text-muted-foreground text-[10px] uppercase tracking-wider">
-                    <th className="py-3 px-4 font-semibold">Nama & Email</th>
-                    <th className="py-3 px-4 font-semibold">NIP / NIS</th>
-                    <th className="py-3 px-4 font-semibold">Hak Akses / Peran</th>
-                    <th className="py-3 px-4 font-semibold">Status Akun</th>
-                    <th className="py-3 px-4 font-semibold">Login Terakhir</th>
-                    <th className="py-3 px-4 font-semibold text-right">Aksi Pengelolaan</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/60">
-                  {paginatedUsers.map((u) => (
-                    <tr key={u.id} className="hover:bg-muted/30 transition-colors">
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2.5">
-                          <div className="h-8 w-8 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center justify-center font-bold text-xs shrink-0">
-                            {u.fullName.charAt(0)}
-                          </div>
-                          <div>
-                            <p className="font-semibold text-foreground">{u.fullName}</p>
-                            <p className="text-[11px] text-muted-foreground">{u.email}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 font-mono font-medium text-foreground">
-                        {u.username}
-                      </td>
-                      <td className="py-3 px-4">
+            <>
+              {/* Mobile Card List View (md:hidden) */}
+              <div className="md:hidden space-y-3 p-3">
+                {paginatedUsers.map((u) => (
+                  <MobileDataCard
+                    key={u.id}
+                    avatar={
+                      <div className="h-9 w-9 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center justify-center font-bold text-xs shrink-0">
+                        {u.fullName.charAt(0)}
+                      </div>
+                    }
+                    title={u.fullName}
+                    subtitle={u.email}
+                    badge={
+                      <div className="flex items-center gap-1.5 flex-wrap justify-end">
                         <span
                           className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-semibold border ${getRoleBadgeVariant(
                             u.role
@@ -441,63 +427,162 @@ export function UserManagement() {
                         >
                           {u.roleLabel}
                         </span>
-                      </td>
-                      <td className="py-3 px-4">
                         <Badge
                           variant={u.status === "AKTIF" ? "hadir" : "alpa"}
-                          className="text-[10px] px-2 py-0.5"
+                          className="text-[10px] px-1.5 py-0.5"
                         >
                           {u.status}
                         </Badge>
-                      </td>
-                      <td className="py-3 px-4 text-muted-foreground text-[11px]">
-                        {u.lastLogin || "Belum Login"}
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleResetPassword(u)}
-                            className="h-7 text-[11px] px-2 gap-1 text-muted-foreground hover:text-foreground"
-                            title="Simulasi Reset Kata Sandi"
-                          >
-                            <Key className="h-3 w-3" />
-                            <span className="hidden sm:inline">Reset</span>
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleOpenEdit(u)}
-                            className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                            title="Edit Data Pengguna"
-                          >
-                            <Edit className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleOpenToggleStatus(u)}
-                            className={`h-7 w-7 ${
-                              u.status === "AKTIF"
-                                ? "text-rose-600 hover:text-rose-700"
-                                : "text-emerald-600 hover:text-emerald-700"
-                            }`}
-                            title={u.status === "AKTIF" ? "Nonaktifkan Akun" : "Aktifkan Akun"}
-                          >
-                            {u.status === "AKTIF" ? (
+                      </div>
+                    }
+                    fields={[
+                      { label: "NIP / NIS", value: <span className="font-mono">{u.username}</span> },
+                      { label: "Login Terakhir", value: u.lastLogin || "Belum Login" },
+                    ]}
+                    actions={
+                      <div className="flex items-center gap-2 w-full justify-end flex-wrap pt-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleResetPassword(u)}
+                          className="h-9 min-h-[44px] text-xs gap-1.5 text-muted-foreground hover:text-foreground flex-1 sm:flex-none"
+                        >
+                          <Key className="h-3.5 w-3.5" />
+                          <span>Reset Sandi</span>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleOpenEdit(u)}
+                          className="h-9 min-h-[44px] text-xs gap-1.5 text-muted-foreground hover:text-foreground flex-1 sm:flex-none"
+                        >
+                          <Edit className="h-3.5 w-3.5" />
+                          <span>Edit</span>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleOpenToggleStatus(u)}
+                          className={`h-9 min-h-[44px] text-xs gap-1.5 flex-1 sm:flex-none ${
+                            u.status === "AKTIF"
+                              ? "text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                              : "text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+                          }`}
+                        >
+                          {u.status === "AKTIF" ? (
+                            <>
                               <UserX className="h-3.5 w-3.5" />
-                            ) : (
+                              <span>Nonaktifkan</span>
+                            </>
+                          ) : (
+                            <>
                               <UserCheck className="h-3.5 w-3.5" />
-                            )}
-                          </Button>
-                        </div>
-                      </td>
+                              <span>Aktifkan</span>
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    }
+                  />
+                ))}
+              </div>
+
+              {/* Desktop View: Full Table (hidden md:block) */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-xs text-left min-w-[700px] data-tabular">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/40 text-muted-foreground text-[10px] uppercase tracking-wider">
+                      <th className="py-3 px-4 font-semibold">Nama & Email</th>
+                      <th className="py-3 px-4 font-semibold">NIP / NIS</th>
+                      <th className="py-3 px-4 font-semibold">Hak Akses / Peran</th>
+                      <th className="py-3 px-4 font-semibold">Status Akun</th>
+                      <th className="py-3 px-4 font-semibold">Login Terakhir</th>
+                      <th className="py-3 px-4 font-semibold text-right">Aksi Pengelolaan</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-border/60">
+                    {paginatedUsers.map((u) => (
+                      <tr key={u.id} className="hover:bg-muted/30 transition-colors">
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-2.5">
+                            <div className="h-8 w-8 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center justify-center font-bold text-xs shrink-0">
+                              {u.fullName.charAt(0)}
+                            </div>
+                            <div>
+                              <p className="font-semibold text-foreground">{u.fullName}</p>
+                              <p className="text-[11px] text-muted-foreground">{u.email}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 font-mono font-medium text-foreground">
+                          {u.username}
+                        </td>
+                        <td className="py-3 px-4">
+                          <span
+                            className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-semibold border ${getRoleBadgeVariant(
+                              u.role
+                            )}`}
+                          >
+                            {u.roleLabel}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <Badge
+                            variant={u.status === "AKTIF" ? "hadir" : "alpa"}
+                            className="text-[10px] px-2 py-0.5"
+                          >
+                            {u.status}
+                          </Badge>
+                        </td>
+                        <td className="py-3 px-4 text-muted-foreground text-[11px]">
+                          {u.lastLogin || "Belum Login"}
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleResetPassword(u)}
+                              className="h-7 text-[11px] px-2 gap-1 text-muted-foreground hover:text-foreground"
+                              title="Simulasi Reset Kata Sandi"
+                            >
+                              <Key className="h-3 w-3" />
+                              <span className="hidden sm:inline">Reset</span>
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleOpenEdit(u)}
+                              className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                              title="Edit Data Pengguna"
+                            >
+                              <Edit className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleOpenToggleStatus(u)}
+                              className={`h-7 w-7 ${
+                                u.status === "AKTIF"
+                                  ? "text-rose-600 hover:text-rose-700"
+                                  : "text-emerald-600 hover:text-emerald-700"
+                              }`}
+                              title={u.status === "AKTIF" ? "Nonaktifkan Akun" : "Aktifkan Akun"}
+                            >
+                              {u.status === "AKTIF" ? (
+                                <UserX className="h-3.5 w-3.5" />
+                              ) : (
+                                <UserCheck className="h-3.5 w-3.5" />
+                              )}
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
 
           {/* Pagination */}

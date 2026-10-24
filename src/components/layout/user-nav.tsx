@@ -105,7 +105,7 @@ export function UserNav() {
                   <span>Simulasi Peran:</span>
                 </p>
                 <div className="grid grid-cols-2 gap-1 text-[11px]">
-                  {(["ADMIN", "GURU", "KEPALA_SEKOLAH", "SISWA"] as DemoRoleType[]).map((r) => {
+                  {(["DEVELOPER", "ADMIN", "GURU", "KEPALA_SEKOLAH", "SISWA"] as DemoRoleType[]).map((r) => {
                     const u = DEMO_USERS[r];
                     const isSelected = role === r;
                     return (
@@ -119,9 +119,9 @@ export function UserNav() {
                         }`}
                       >
                         <span className="text-xs">
-                          {r === "ADMIN" ? "🛡️" : r === "GURU" ? "👨‍🏫" : r === "KEPALA_SEKOLAH" ? "🏫" : "🎒"}
+                          {r === "DEVELOPER" ? "💻" : r === "ADMIN" ? "🛡️" : r === "GURU" ? "👨‍🏫" : r === "KEPALA_SEKOLAH" ? "🏫" : "🎒"}
                         </span>
-                        <span className="truncate">{r === "KEPALA_SEKOLAH" ? "Kepsek" : u.roleLabel.split("/")[0].trim()}</span>
+                        <span className="truncate">{r === "DEVELOPER" ? "Developer" : r === "KEPALA_SEKOLAH" ? "Kepsek" : u.roleLabel.split("/")[0].trim()}</span>
                       </button>
                     );
                   })}

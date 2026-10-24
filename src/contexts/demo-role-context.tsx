@@ -12,8 +12,9 @@ export function mapBackendRoleToAppRole(backendRole?: string): DemoRoleType {
       return "GURU";
     case "PRINCIPAL":
       return "KEPALA_SEKOLAH";
-    case "SUPER_ADMIN":
     case "DEVELOPER":
+      return "DEVELOPER";
+    case "SUPER_ADMIN":
     case "ADMIN":
     case "SCHOOL_ADMIN":
     default:
@@ -95,7 +96,9 @@ export function DemoRoleProvider({ children }: { children: React.ReactNode }) {
     if (user) {
       const appRole = role;
       const roleLabel =
-        user.role === "STUDENT"
+        user.role === "DEVELOPER"
+          ? "Developer & Core Engineer"
+          : user.role === "STUDENT"
           ? "Siswa"
           : user.role === "TEACHER"
           ? "Guru & Wali Kelas"
@@ -111,7 +114,9 @@ export function DemoRoleProvider({ children }: { children: React.ReactNode }) {
         identifier: user.studentNis || user.teacherNip || user.username,
         email: user.email || `${user.username}@smapbngrayun.sch.id`,
         title:
-          user.role === "STUDENT"
+          user.role === "DEVELOPER"
+            ? "Lead System Architect & Core Platform Engineer"
+            : user.role === "STUDENT"
             ? `Siswa (NIS: ${user.studentNis || user.username})`
             : user.role === "TEACHER"
             ? `Pendidik (NIP: ${user.teacherNip || user.username})`

@@ -42,6 +42,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { MobileDataCard } from "@/components/shared/mobile-data-list";
 import { useSchoolData } from "@/contexts/school-data-context";
 import { apiClient } from "@/lib/api-client";
 import { AttendanceRecord, AttendanceStatus, StudentRecapSummary } from "@/types";
@@ -441,64 +442,167 @@ export function AttendanceHistoryRecap() {
                   </p>
                 </div>
               ) : (
-                <div className="rounded-xl border overflow-x-auto">
-                  <table className="w-full text-xs text-left">
-                    <thead className="bg-muted/50 border-b font-semibold text-muted-foreground uppercase text-[10px]">
-                      <tr>
-                        <th className="px-4 py-3">Tanggal & Jam</th>
-                        <th className="px-4 py-3">Nama Siswa</th>
-                        <th className="px-4 py-3">NIS</th>
-                        <th className="px-4 py-3">Rombel</th>
-                        <th className="px-4 py-3 text-center">Status</th>
-                        <th className="px-4 py-3">Metode & Perangkat</th>
-                        <th className="px-4 py-3">Keterangan</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y">
-                      {filteredRecords.map((record) => (
-                        <tr key={record.id} className="hover:bg-muted/30 transition-colors">
-                          <td className="px-4 py-3 whitespace-nowrap font-mono">
-                            <span className="font-semibold text-foreground">{record.date}</span>
-                            <span className="block text-[11px] text-muted-foreground">
-                              {record.checkInTime || "--:--:--"}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap font-bold text-foreground">
-                            {record.studentName}
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap font-mono text-muted-foreground">
-                            {record.studentNis}
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            <Badge variant="outline" className="text-[11px]">
-                              {record.className}
-                            </Badge>
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-center">
-                            {getRecordStatusBadge(record.status)}
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            <span className="font-medium text-foreground block">
-                              {formatMethod(record.method)}
-                            </span>
-                            <span className="text-[10px] text-muted-foreground">
-                              {record.deviceLocation || "Sesi Pembelajaran"}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-[11px] text-muted-foreground max-w-xs truncate">
-                            {record.notes || "-"}
-                          </td>
+                <>
+                  {/* Mobile Cards (md:hidden) */}
+                  <div className="md:hidden space-y-3">
+                    {filteredRecords.map((record) => (
+                      <MobileDataCard
+                        key={record.id}
+                        title={record.studentName}
+                        subtitle={
+                          <span className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-semibold text-primary">{record.className}</span>
+                            <span>•</span>
+                            <span className="font-mono text-muted-foreground">NIS: {record.studentNis}</span>
+                          </span>
+                        }
+                        badge={getRecordStatusBadge(record.status)}
+                        fields={[
+                          {
+                            label: "Tanggal & Jam",
+                            value: (
+                              <div className="flex items-center gap-1 font-mono text-xs">
+                                <Clock className="h-3 w-3 text-muted-foreground" />
+                                <span>{record.date} {record.checkInTime || "--:--"}</span>
+                              </div>
+                            ),
+                          },
+                          {
+                            label: "Metode Presensi",
+                            value: formatMethod(record.method),
+                          },
+                          {
+                            label: "Lokasi / Catatan",
+                            value: record.deviceLocation || record.notes || "-",
+                          },
+                        ]}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Desktop Table View (hidden md:block) */}
+                  <div className="hidden md:block rounded-xl border overflow-x-auto">
+                    <table className="w-full text-xs text-left">
+                      <thead className="bg-muted/50 border-b font-semibold text-muted-foreground uppercase text-[10px]">
+                        <tr>
+                          <th className="px-4 py-3">Tanggal & Jam</th>
+                          <th className="px-4 py-3">Nama Siswa</th>
+                          <th className="px-4 py-3">NIS</th>
+                          <th className="px-4 py-3">Rombel</th>
+                          <th className="px-4 py-3 text-center">Status</th>
+                          <th className="px-4 py-3">Metode & Perangkat</th>
+                          <th className="px-4 py-3">Keterangan</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody className="divide-y">
+                        {filteredRecords.map((record) => (
+                          <tr key={record.id} className="hover:bg-muted/30 transition-colors">
+                            <td className="px-4 py-3 whitespace-nowrap font-mono">
+                              <span className="font-semibold text-foreground">{record.date}</span>
+                              <span className="block text-[11px] text-muted-foreground">
+                                {record.checkInTime || "--:--:--"}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap font-bold text-foreground">
+                              {record.studentName}
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap font-mono text-muted-foreground">
+                              {record.studentNis}
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              <Badge variant="outline" className="text-[11px]">
+                                {record.className}
+                              </Badge>
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap text-center">
+                              {getRecordStatusBadge(record.status)}
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              <span className="font-medium text-foreground block">
+                                {formatMethod(record.method)}
+                              </span>
+                              <span className="text-[10px] text-muted-foreground">
+                                {record.deviceLocation || "Sesi Pembelajaran"}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-[11px] text-muted-foreground max-w-xs truncate">
+                              {record.notes || "-"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               )}
             </TabsContent>
 
             {/* TAB 2: Rekap Per Siswa */}
             <TabsContent value="student-recap" className="pt-4">
-              <div className="rounded-xl border overflow-x-auto">
+              {/* Mobile Cards View (md:hidden) */}
+              <div className="md:hidden space-y-3">
+                {filteredStudentRecaps.map((recap) => {
+                  const isGood = recap.attendanceRate >= 90;
+                  const isWarning = recap.attendanceRate < 85;
+
+                  return (
+                    <MobileDataCard
+                      key={recap.studentId}
+                      title={recap.studentName}
+                      subtitle={
+                        <span className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-semibold text-primary">{recap.className}</span>
+                          <span>•</span>
+                          <span className="font-mono text-muted-foreground">NIS: {recap.studentNis}</span>
+                        </span>
+                      }
+                      badge={
+                        <Badge
+                          variant={isGood ? "hadir" : isWarning ? "alpa" : "terlambat"}
+                          className="font-mono text-[10px]"
+                        >
+                          {recap.attendanceRate.toFixed(1)}%
+                        </Badge>
+                      }
+                      fields={[
+                        {
+                          label: "Total Sesi",
+                          value: <span className="font-bold font-mono">{recap.totalSessions} Sesi</span>,
+                        },
+                        {
+                          label: "Hadir / Terlambat",
+                          value: (
+                            <span className="font-mono font-semibold">
+                              <span className="text-emerald-600">{recap.hadir} H</span> /{" "}
+                              <span className="text-amber-600">{recap.terlambat} T</span>
+                            </span>
+                          ),
+                        },
+                        {
+                          label: "Sakit / Izin",
+                          value: (
+                            <span className="font-mono font-semibold">
+                              <span className="text-blue-600">{recap.sakit} S</span> /{" "}
+                              <span className="text-purple-600">{recap.izin} I</span>
+                            </span>
+                          ),
+                        },
+                        {
+                          label: "Alpa (Tanpa Ket.)",
+                          value: (
+                            <span className="font-mono font-bold text-rose-600">
+                              {recap.alpa} Hari
+                            </span>
+                          ),
+                        },
+                      ]}
+                    />
+                  );
+                })}
+              </div>
+
+              {/* Desktop Table View (hidden md:block) */}
+              <div className="hidden md:block rounded-xl border overflow-x-auto">
                 <table className="w-full text-xs text-left">
                   <thead className="bg-muted/50 border-b font-semibold text-muted-foreground uppercase text-[10px]">
                     <tr>
@@ -587,7 +691,63 @@ export function AttendanceHistoryRecap() {
 
             {/* TAB 3: Rekap Per Kelas */}
             <TabsContent value="class-recap" className="pt-4">
-              <div className="rounded-xl border overflow-x-auto">
+              {/* Mobile Cards View (md:hidden) */}
+              <div className="md:hidden space-y-3">
+                {filteredClassSummaries.map((cls) => (
+                  <MobileDataCard
+                    key={cls.classId}
+                    title={cls.className}
+                    subtitle={`${cls.totalStudents} Siswa Terdaftar`}
+                    badge={
+                      <Badge
+                        variant={cls.persentase >= 90 ? "hadir" : cls.persentase < 85 ? "alpa" : "terlambat"}
+                        className="font-mono text-[10px]"
+                      >
+                        {cls.persentase.toFixed(1)}%
+                      </Badge>
+                    }
+                    fields={[
+                      {
+                        label: "Hadir / Terlambat",
+                        value: (
+                          <span className="font-mono font-semibold">
+                            <span className="text-emerald-600">{cls.hadir} H</span> /{" "}
+                            <span className="text-amber-600">{cls.terlambat} T</span>
+                          </span>
+                        ),
+                      },
+                      {
+                        label: "Sakit / Izin",
+                        value: (
+                          <span className="font-mono font-semibold">
+                            <span className="text-blue-600">{cls.sakit} S</span> /{" "}
+                            <span className="text-purple-600">{cls.izin} I</span>
+                          </span>
+                        ),
+                      },
+                      {
+                        label: "Alpa (Tanpa Ket.)",
+                        value: (
+                          <span className="font-mono font-bold text-rose-600">
+                            {cls.alpa} Siswa
+                          </span>
+                        ),
+                      },
+                      {
+                        label: "Tingkat Kehadiran",
+                        value: (
+                          <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400">
+                            {cls.persentase.toFixed(1)}%
+                          </span>
+                        ),
+                      },
+                    ]}
+                  />
+                ))}
+              </div>
+
+              {/* Desktop Table View (hidden md:block) */}
+              <div className="hidden md:block rounded-xl border overflow-x-auto">
                 <table className="w-full text-xs text-left">
                   <thead className="bg-muted/50 border-b font-semibold text-muted-foreground uppercase text-[10px]">
                     <tr>

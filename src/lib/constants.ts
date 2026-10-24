@@ -11,6 +11,7 @@ import {
   Settings,
   ShieldCheck,
   UserCog,
+  Terminal,
 } from "lucide-react";
 import { AttendanceStatus, PermissionStatus } from "@/types";
 
@@ -36,7 +37,7 @@ export const ACADEMIC_YEARS = [
   { id: "2025/2026-genap", label: "2025/2026 Genap", year: "2025/2026", semester: "Genap", isCurrent: false },
 ];
 
-export type DemoRoleType = "ADMIN" | "GURU" | "KEPALA_SEKOLAH" | "SISWA";
+export type DemoRoleType = "ADMIN" | "GURU" | "KEPALA_SEKOLAH" | "SISWA" | "DEVELOPER";
 
 export interface DemoUser {
   id: string;
@@ -60,6 +61,16 @@ export const DEMO_USERS: Record<DemoRoleType, DemoUser> = {
     email: "admin@smapbngrayun.sch.id",
     title: "Staf Tata Usaha & Administrator SIAKAD",
     avatarFallback: "SR",
+  },
+  DEVELOPER: {
+    id: "usr-dev",
+    role: "DEVELOPER",
+    roleLabel: "Developer & Core Engineer",
+    name: "Fajar Pratama, S.Kom.",
+    identifier: "DEV-SIAKAD-01",
+    email: "dev@smapbngrayun.sch.id",
+    title: "Lead System Architect & Core Platform Engineer",
+    avatarFallback: "FP",
   },
   GURU: {
     id: "usr-guru",
@@ -111,21 +122,21 @@ export const MAIN_NAVIGATION: { group: string; items: NavItem[] }[] = [
         title: "Dashboard",
         href: "/dashboard",
         icon: LayoutDashboard,
-        roles: ["ADMIN", "GURU", "KEPALA_SEKOLAH", "SISWA"],
+        roles: ["ADMIN", "DEVELOPER", "GURU", "KEPALA_SEKOLAH", "SISWA"],
       },
       {
         title: "Absensi",
         href: "/attendance",
         icon: QrCode,
         badge: "Live",
-        roles: ["ADMIN", "GURU", "KEPALA_SEKOLAH"],
+        roles: ["ADMIN", "DEVELOPER", "GURU", "KEPALA_SEKOLAH"],
       },
       {
         title: "Pengajuan Izin",
         href: "/permissions",
         icon: FileCheck2,
         badge: "3 Baru",
-        roles: ["ADMIN", "GURU", "KEPALA_SEKOLAH", "SISWA"],
+        roles: ["ADMIN", "DEVELOPER", "GURU", "KEPALA_SEKOLAH", "SISWA"],
       },
     ],
   },
@@ -136,31 +147,31 @@ export const MAIN_NAVIGATION: { group: string; items: NavItem[] }[] = [
         title: "Data Siswa",
         href: "/students",
         icon: Users,
-        roles: ["ADMIN", "GURU", "KEPALA_SEKOLAH"],
+        roles: ["ADMIN", "DEVELOPER", "GURU", "KEPALA_SEKOLAH"],
       },
       {
         title: "Data Guru",
         href: "/teachers",
         icon: GraduationCap,
-        roles: ["ADMIN", "KEPALA_SEKOLAH"],
+        roles: ["ADMIN", "DEVELOPER", "KEPALA_SEKOLAH"],
       },
       {
         title: "Kelas",
         href: "/classes",
         icon: School,
-        roles: ["ADMIN", "GURU", "KEPALA_SEKOLAH"],
+        roles: ["ADMIN", "DEVELOPER", "GURU", "KEPALA_SEKOLAH"],
       },
       {
         title: "Mata Pelajaran",
         href: "/subjects",
         icon: BookOpen,
-        roles: ["ADMIN", "GURU", "KEPALA_SEKOLAH"],
+        roles: ["ADMIN", "DEVELOPER", "GURU", "KEPALA_SEKOLAH"],
       },
       {
         title: "Jadwal",
         href: "/schedules",
         icon: CalendarDays,
-        roles: ["ADMIN", "GURU", "KEPALA_SEKOLAH", "SISWA"],
+        roles: ["ADMIN", "DEVELOPER", "GURU", "KEPALA_SEKOLAH", "SISWA"],
       },
     ],
   },
@@ -171,19 +182,26 @@ export const MAIN_NAVIGATION: { group: string; items: NavItem[] }[] = [
         title: "Laporan",
         href: "/reports",
         icon: FileSpreadsheet,
-        roles: ["ADMIN", "GURU", "KEPALA_SEKOLAH"],
+        roles: ["ADMIN", "DEVELOPER", "GURU", "KEPALA_SEKOLAH"],
       },
       {
         title: "Pengguna",
         href: "/users",
         icon: UserCog,
-        roles: ["ADMIN"],
+        roles: ["ADMIN", "DEVELOPER"],
       },
       {
         title: "Pengaturan",
         href: "/settings",
         icon: Settings,
-        roles: ["ADMIN"],
+        roles: ["ADMIN", "DEVELOPER"],
+      },
+      {
+        title: "Developer Console",
+        href: "/settings",
+        icon: Terminal,
+        badge: "Governance",
+        roles: ["DEVELOPER", "ADMIN"],
       },
     ],
   },

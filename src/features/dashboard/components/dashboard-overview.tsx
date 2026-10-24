@@ -6,6 +6,7 @@ import { AdminDashboardView } from "./admin-dashboard-view";
 import { TeacherDashboardView } from "./teacher-dashboard-view";
 import { PrincipalDashboardView } from "./principal-dashboard-view";
 import { StudentDashboardView } from "./student-dashboard-view";
+import { DeveloperDashboardView } from "@/features/settings/components/developer-dashboard-view";
 import { useDemoRole } from "@/contexts/demo-role-context";
 import { useAuth } from "@/contexts/auth-context";
 import { DemoRoleType, DEMO_USERS } from "@/lib/constants";
@@ -58,8 +59,30 @@ export function DashboardOverview() {
             </div>
           </div>
 
-          {/* 4 Interactive Role Tabs */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          {/* Interactive Role Tabs */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+            {/* Developer System */}
+            <button
+              onClick={() => handleRoleSelect("DEVELOPER")}
+              className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-left transition-all ${
+                role === "DEVELOPER"
+                  ? "border-primary bg-primary/10 text-foreground shadow-sm ring-1 ring-primary"
+                  : "border-border/80 bg-background hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <div
+                className={`h-8 w-8 rounded-lg flex items-center justify-center text-sm shrink-0 ${
+                  role === "DEVELOPER" ? "bg-primary text-primary-foreground font-bold" : "bg-muted text-muted-foreground"
+                }`}
+              >
+                💻
+              </div>
+              <div className="overflow-hidden">
+                <p className="text-xs font-bold truncate">Developer</p>
+                <p className="text-[10px] text-muted-foreground truncate">Feature Registry</p>
+              </div>
+            </button>
+
             {/* Admin / Tata Usaha */}
             <button
               onClick={() => handleRoleSelect("ADMIN")}
@@ -78,7 +101,7 @@ export function DashboardOverview() {
               </div>
               <div className="overflow-hidden">
                 <p className="text-xs font-bold truncate">Admin / Tata Usaha</p>
-                <p className="text-[10px] text-muted-foreground truncate">Pusat Kendali Sistem</p>
+                <p className="text-[10px] text-muted-foreground truncate">Pusat Kendali</p>
               </div>
             </button>
 
@@ -100,7 +123,7 @@ export function DashboardOverview() {
               </div>
               <div className="overflow-hidden">
                 <p className="text-xs font-bold truncate">Guru & Wali Kelas</p>
-                <p className="text-[10px] text-muted-foreground truncate">Jadwal & Rekap Rombel</p>
+                <p className="text-[10px] text-muted-foreground truncate">Jadwal & Rombel</p>
               </div>
             </button>
 
@@ -124,14 +147,14 @@ export function DashboardOverview() {
               </div>
               <div className="overflow-hidden">
                 <p className="text-xs font-bold truncate">Kepala Sekolah</p>
-                <p className="text-[10px] text-muted-foreground truncate">Statistik & Mutu Agregat</p>
+                <p className="text-[10px] text-muted-foreground truncate">Statistik Mutu</p>
               </div>
             </button>
 
             {/* Siswa */}
             <button
               onClick={() => handleRoleSelect("SISWA")}
-              className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-left transition-all ${
+              className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-left transition-all col-span-2 sm:col-span-1 ${
                 role === "SISWA"
                   ? "border-primary bg-primary/10 text-foreground shadow-sm ring-1 ring-primary"
                   : "border-border/80 bg-background hover:bg-muted/50 text-muted-foreground hover:text-foreground"
@@ -146,7 +169,7 @@ export function DashboardOverview() {
               </div>
               <div className="overflow-hidden">
                 <p className="text-xs font-bold truncate">Siswa</p>
-                <p className="text-[10px] text-muted-foreground truncate">Presensi & Izin Mandiri</p>
+                <p className="text-[10px] text-muted-foreground truncate">Presensi & Izin</p>
               </div>
             </button>
           </div>
@@ -154,6 +177,7 @@ export function DashboardOverview() {
       )}
 
       {/* Render strictly the role-appropriate dashboard view */}
+      {role === "DEVELOPER" && <DeveloperDashboardView />}
       {role === "ADMIN" && <AdminDashboardView />}
       {role === "GURU" && <TeacherDashboardView />}
       {role === "KEPALA_SEKOLAH" && <PrincipalDashboardView />}

@@ -216,17 +216,31 @@ export function Topbar({ onOpenDrawer, className = "" }: TopbarProps) {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-9 gap-1.5 text-xs bg-primary/5 hover:bg-primary/10 border-primary/30 text-primary font-semibold px-2.5 sm:px-3"
+                  className="h-9 gap-1 text-xs bg-primary/5 hover:bg-primary/10 border-primary/30 text-primary font-semibold px-2 sm:px-3 shrink-0"
+                  aria-label="Simulasi Peran Pengguna"
                 >
                   <Sparkles className="h-3.5 w-3.5 text-amber-500 animate-spin-slow shrink-0" />
-                  <span className="truncate max-w-[85px] sm:max-w-none">
-                    {role === "ADMIN"
-                      ? "🛡️ Admin"
+                  <span className="text-sm shrink-0">
+                    {role === "DEVELOPER"
+                      ? "💻"
+                      : role === "ADMIN"
+                      ? "🛡️"
                       : role === "GURU"
-                      ? "👨‍🏫 Guru"
+                      ? "👨‍🏫"
                       : role === "KEPALA_SEKOLAH"
-                      ? "🏫 Kepsek"
-                      : "🎒 Siswa"}
+                      ? "🏫"
+                      : "🎒"}
+                  </span>
+                  <span className="hidden sm:inline truncate">
+                    {role === "DEVELOPER"
+                      ? "Dev"
+                      : role === "ADMIN"
+                      ? "Admin"
+                      : role === "GURU"
+                      ? "Guru"
+                      : role === "KEPALA_SEKOLAH"
+                      ? "Kepsek"
+                      : "Siswa"}
                   </span>
                   <ChevronDown className="h-3 w-3 opacity-60 shrink-0" />
                 </Button>
@@ -236,7 +250,7 @@ export function Topbar({ onOpenDrawer, className = "" }: TopbarProps) {
                   Simulasi Peran Pengguna
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {(["ADMIN", "GURU", "KEPALA_SEKOLAH", "SISWA"] as DemoRoleType[]).map((r) => {
+                {(["ADMIN", "DEVELOPER", "GURU", "KEPALA_SEKOLAH", "SISWA"] as DemoRoleType[]).map((r) => {
                   const u = DEMO_USERS[r];
                   const isSelected = role === r;
                   return (
@@ -250,7 +264,7 @@ export function Topbar({ onOpenDrawer, className = "" }: TopbarProps) {
                       }`}
                     >
                       <span className="text-base">
-                        {r === "ADMIN" ? "🛡️" : r === "GURU" ? "👨‍🏫" : r === "KEPALA_SEKOLAH" ? "🏫" : "🎒"}
+                        {r === "DEVELOPER" ? "💻" : r === "ADMIN" ? "🛡️" : r === "GURU" ? "👨‍🏫" : r === "KEPALA_SEKOLAH" ? "🏫" : "🎒"}
                       </span>
                       <div className="flex-1 overflow-hidden">
                         <p className="leading-tight font-semibold truncate">{u.name}</p>
@@ -264,15 +278,28 @@ export function Topbar({ onOpenDrawer, className = "" }: TopbarProps) {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <div className="flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-2.5 sm:px-3 py-1 text-xs text-primary font-semibold select-none">
+            <div className="flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-2 sm:px-3 py-1 text-xs text-primary font-semibold select-none shrink-0">
               <span>
-                {role === "ADMIN"
-                  ? "🛡️ Admin"
+                {role === "DEVELOPER"
+                  ? "💻"
+                  : role === "ADMIN"
+                  ? "🛡️"
                   : role === "GURU"
-                  ? "👨‍🏫 Guru"
+                  ? "👨‍🏫"
                   : role === "KEPALA_SEKOLAH"
-                  ? "🏫 Kepsek"
-                  : "🎒 Siswa"}
+                  ? "🏫"
+                  : "🎒"}
+              </span>
+              <span className="hidden sm:inline">
+                {role === "DEVELOPER"
+                  ? "Developer"
+                  : role === "ADMIN"
+                  ? "Admin"
+                  : role === "GURU"
+                  ? "Guru"
+                  : role === "KEPALA_SEKOLAH"
+                  ? "Kepsek"
+                  : "Siswa"}
               </span>
             </div>
           )}
