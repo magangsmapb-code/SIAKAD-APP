@@ -16,7 +16,9 @@ import {
   QrCode,
   Barcode,
   KeyRound,
+  Camera,
 } from "lucide-react";
+import { CameraQrScanner } from "@/components/shared/camera-qr-scanner";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -106,6 +108,7 @@ export function StudentAttendanceCard() {
   const [tokenModalOpen, setTokenModalOpen] = React.useState(false);
   const [inputToken, setInputToken] = React.useState("");
   const [verifyingToken, setVerifyingToken] = React.useState(false);
+  const [scannerMode, setScannerMode] = React.useState<"CAMERA" | "INPUT">("CAMERA");
 
   // Clock
   const [wibClock, setWibClock] = React.useState<string>("");
@@ -257,10 +260,11 @@ export function StudentAttendanceCard() {
     }
   };
 
-  const handleTokenCheckIn = async () => {
-    const cleanToken = inputToken.trim();
-    if (!cleanToken || cleanToken.length < 6) {
-      toast.error("Masukkan 6 digit token presensi dari guru.");
+  const handleTokenCheckIn = async (overrideToken?: string) => {
+    const raw = typeof overrideToken === "string" ? overrideToken : inputToken;
+    const cleanToken = raw.trim();
+    if (!cleanToken || cleanToken.length < 4) {
+      toast.error("Masukkan atau pindai token presensi yang valid dari guru.");
       return;
     }
 
@@ -285,6 +289,8 @@ export function StudentAttendanceCard() {
         longitude: pos.lon,
         gpsAccuracyMeters: pos.accuracy,
         method: "QR_CODE",
+        token: cleanToken,
+        barcode: cleanToken,
         deviceId,
         deviceModel: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 60) : "Browser",
         nonce,
@@ -660,44 +666,87 @@ export function StudentAttendanceCard() {
 
       {/* Dialog Check-in Token / Barcode Sesi Kelas */}
       <Dialog open={tokenModalOpen} onOpenChange={setTokenModalOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base font-bold">
               <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-600">
                 <KeyRound className="h-4 w-4" />
               </span>
-              Presensi dengan Token / Barcode Kelas
+              Presensi dengan Token / QR Sesi Kelas
             </DialogTitle>
             <DialogDescription className="text-xs">
-              Masukkan 6 digit token atau pindai barcode yang ditampilkan oleh guru di layar kelas.
+              Pindai QR Code proyektor guru dengan kamera ponsel atau ketik 6-digit token manual.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-2">
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-foreground">
-                6-Digit Token Presensi Guru
-              </label>
-              <Input
-                type="text"
-                maxLength={6}
-                placeholder="Contoh: 749201"
-                value={inputToken}
-                onChange={(e) => setInputToken(e.target.value.replace(/[^0-9]/g, ""))}
-                className="text-center font-mono text-2xl tracking-widest font-black h-12"
-              />
-              <p className="text-[11px] text-muted-foreground text-center">
-                Mintalah token ini kepada guru mapel / pengawas yang membuka sesi kelas.
-              </p>
-            </div>
+          {/* Mode Switcher Buttons */}
+          <div className="flex items-center gap-1.5 p-1 bg-muted/60 rounded-xl border border-border">
+            <button
+              type="button"
+              onClick={() => setScannerMode("CAMERA")}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                scannerMode === "CAMERA"
+                  ? "bg-card text-foreground shadow-sm ring-1 ring-border"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Camera className="h-3.5 w-3.5 text-primary" />
+              <span>Kamera Pemindai QR</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setScannerMode("INPUT")}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                scannerMode === "INPUT"
+                  ? "bg-card text-foreground shadow-sm ring-1 ring-border"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <KeyRound className="h-3.5 w-3.5 text-indigo-500" />
+              <span>Input 6-Digit Manual</span>
+            </button>
+          </div>
+
+          <div className="space-y-4 py-1">
+            {scannerMode === "CAMERA" ? (
+              <div className="space-y-2">
+                <CameraQrScanner
+                  onScanSuccess={(code) => {
+                    handleTokenCheckIn(code);
+                  }}
+                  autoCloseOnSuccess={false}
+                  title="Arahkan Kamera ke QR Guru"
+                  description="Arahkan lensa kamera ke layar proyektor atau papan tulis kelas."
+                />
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-foreground">
+                    6-Digit Token Presensi Guru
+                  </label>
+                  <Input
+                    type="text"
+                    maxLength={10}
+                    placeholder="Contoh: 749201"
+                    value={inputToken}
+                    onChange={(e) => setInputToken(e.target.value.replace(/[^0-9a-zA-Z]/g, ""))}
+                    className="text-center font-mono text-2xl tracking-widest font-black h-12"
+                  />
+                  <p className="text-[11px] text-muted-foreground text-center">
+                    Mintalah token ini kepada guru mapel / pengawas yang membuka sesi kelas.
+                  </p>
+                </div>
+              </div>
+            )}
 
             <div className="rounded-xl border border-border bg-muted/40 p-3 space-y-1.5 text-xs text-muted-foreground">
               <div className="flex items-center gap-1.5 font-medium text-foreground">
                 <Navigation className="h-3.5 w-3.5 text-primary" />
-                <span>Validasi Lokasi & Batas Radius</span>
+                <span>Validasi Lokasi & Geofence</span>
               </div>
               <p className="text-[11px]">
-                Sistem akan memvalidasi bahwa koordinat perangkat Anda berada di dalam batas radius toleransi sekolah saat mengirimkan token.
+                Sistem memvalidasi koordinat perangkat Anda berada dalam batas toleransi radius sekolah SMA Pemberdayaan Bangsa Ngrayun saat token dikirimkan.
               </p>
             </div>
           </div>
@@ -709,17 +758,19 @@ export function StudentAttendanceCard() {
               onClick={() => setTokenModalOpen(false)}
               className="text-xs"
             >
-              Batal
+              Tutup
             </Button>
-            <Button
-              size="sm"
-              onClick={handleTokenCheckIn}
-              disabled={verifyingToken || inputToken.length < 6}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs gap-1.5 font-semibold"
-            >
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              {verifyingToken ? "Memvalidasi..." : "Verifikasi & Presensi"}
-            </Button>
+            {scannerMode === "INPUT" && (
+              <Button
+                size="sm"
+                onClick={() => handleTokenCheckIn()}
+                disabled={verifyingToken || inputToken.length < 4}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs gap-1.5 font-semibold"
+              >
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                {verifyingToken ? "Memvalidasi..." : "Verifikasi & Presensi"}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

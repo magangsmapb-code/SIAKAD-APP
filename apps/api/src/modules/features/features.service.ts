@@ -78,6 +78,11 @@ export const SYSTEM_PERMISSIONS: GranularPermission[] = [
   // Developer Controls
   { key: 'developer.manage_features', module: 'Developer', label: 'Kelola Fitur', description: 'Aktivasi, penonaktifan, dan maintenance mode fitur' },
   { key: 'developer.view_diagnostics', module: 'Developer', label: 'Diagnostik Sistem', description: 'Inspeksi topologi port dan runtime kesehatan server' },
+
+  // Grades & Academic Reporting (Kurikulum Merdeka)
+  { key: 'grades.view', module: 'Grades', label: 'Lihat Nilai', description: 'Melihat rekap nilai dan rapor Kurikulum Merdeka' },
+  { key: 'grades.input', module: 'Grades', label: 'Input Nilai', description: 'Mengisi asesmen formatif, sumatif materi, PTS, dan PAS' },
+  { key: 'grades.manage', module: 'Grades', label: 'Kelola Nilai', description: 'Mengatur KKTP, mengunci capaian kompetensi, dan menghapus nilai' },
 ];
 
 export const ROLE_PERMISSION_MATRIX: Record<string, string[]> = {
@@ -106,6 +111,7 @@ export const ROLE_PERMISSION_MATRIX: Record<string, string[]> = {
     'attendance.export_report', 'attendance.view_audit_log',
     'permissions.view', 'permissions.review',
     'reports.view', 'reports.export',
+    'grades.view', 'grades.input', 'grades.manage',
     'settings.view', 'settings.manage',
     'audit.view',
     'developer.view_diagnostics',
@@ -118,6 +124,7 @@ export const ROLE_PERMISSION_MATRIX: Record<string, string[]> = {
     'attendance.view', 'attendance.view_class', 'attendance.view_all', 'attendance.rfid_feed', 'attendance.approve_correction',
     'permissions.view',
     'reports.view', 'reports.export', 'attendance.export_report',
+    'grades.view',
     'settings.view',
   ],
   PRINCIPAL: [
@@ -126,6 +133,7 @@ export const ROLE_PERMISSION_MATRIX: Record<string, string[]> = {
     'attendance.view', 'attendance.view_class', 'attendance.view_all', 'attendance.rfid_feed', 'attendance.approve_correction',
     'permissions.view', 'permissions.review',
     'reports.view', 'reports.export', 'attendance.export_report', 'attendance.view_audit_log',
+    'grades.view',
     'settings.view',
     'audit.view',
   ],
@@ -136,12 +144,14 @@ export const ROLE_PERMISSION_MATRIX: Record<string, string[]> = {
     'attendance.teacher.check_in', 'attendance.request_correction', 'attendance.approve_correction',
     'permissions.view', 'permissions.review',
     'reports.view', 'reports.export',
+    'grades.view', 'grades.input',
   ],
   STUDENT: [
     'students.view',
     'academic.schedules.view',
     'attendance.view', 'attendance.view_own', 'attendance.student.check_in', 'attendance.request_correction',
     'permissions.view', 'permissions.create',
+    'grades.view',
   ],
 };
 
@@ -343,16 +353,16 @@ const DEFAULT_FEATURE_REGISTRIES = [
   },
   {
     key: 'feat_grading_examination',
-    name: 'Penilaian Akademik, Rapor, & Ujian CBT',
-    description: 'Modul penilaian formatif/sumatif, rapor kurikulum merdeka, dan pelaksanaan ujian berbasis komputer (CBT).',
+    name: 'Penilaian Akademik & Rapor Kurikulum Merdeka',
+    description: 'Modul penilaian formatif/sumatif materi, PTS, PAS, penentuan KKTP otomatis, predikat huruf A-D, dan deskripsi capaian kompetensi rapor.',
     category: 'Academic Evaluation',
-    route: '/exams',
-    implementationStatus: FeatureImplementationStatus.NOT_IMPLEMENTED,
-    isEnabled: false,
+    route: '/dashboard/grades',
+    implementationStatus: FeatureImplementationStatus.IMPLEMENTED,
+    isEnabled: true,
     maintenanceStatus: FeatureMaintenanceStatus.ACTIVE,
-    requiredPermissions: ['grades.view', 'grades.manage'],
+    requiredPermissions: ['grades.view'],
     dependencies: ['feat_academic_structure', 'feat_student_management'],
-    changeNotes: 'Belum diimplementasikan pada skema database dan rute Tahap 1–18. Terkunci secara arsitektural dari aktivasi semu.',
+    changeNotes: 'Modul Penilaian & Rapor Kurikulum Merdeka terimplementasi penuh dengan skema database PostgreSQL dan REST API.',
   },
   {
     key: 'feat_tu_payment_gateway',

@@ -14,6 +14,7 @@ import {
   PermissionType,
   PermissionStatus,
   Semester,
+  GradePredicate,
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
@@ -514,6 +515,200 @@ async function main() {
     });
     console.log('✅ Permission requests seeded.');
   }
+
+  // 11. Kurikulum Merdeka Student Grades Seeding
+  const adityaGradesPlan = [
+    {
+      subjectCode: 'FIS-10',
+      teacherId: teacherSiti.id,
+      formatif: 88,
+      sumatifMateri: 86,
+      pts: 85,
+      pas: 87,
+      finalScore: 86.6,
+      predicate: GradePredicate.B,
+      kktp: 75,
+      competencySummary: 'Menunjukkan pemahaman yang sangat baik dalam kinematika gerak lurus dan dinamika partikel, serta aktif dalam eksperimen laboratorium.',
+    },
+    {
+      subjectCode: 'MAT-10',
+      teacherId: teacherBambang.id,
+      formatif: 92,
+      sumatifMateri: 90,
+      pts: 88,
+      pas: 90,
+      finalScore: 90.2,
+      predicate: GradePredicate.A,
+      kktp: 75,
+      competencySummary: 'Sangat mahir dalam menyelesaikan sistem persamaan linear tiga variabel dan pemodelan fungsi kuadrat secara analitis.',
+    },
+    {
+      subjectCode: 'BIO-10',
+      teacherId: null,
+      formatif: 84,
+      sumatifMateri: 82,
+      pts: 80,
+      pas: 85,
+      finalScore: 82.8,
+      predicate: GradePredicate.B,
+      kktp: 75,
+      competencySummary: 'Memahami prinsip keanekaragaman hayati dan struktur sel tumbuhan serta hewan dengan baik.',
+    },
+    {
+      subjectCode: 'BIN-10',
+      teacherId: null,
+      formatif: 89,
+      sumatifMateri: 87,
+      pts: 88,
+      pas: 88,
+      finalScore: 88.0,
+      predicate: GradePredicate.A,
+      kktp: 75,
+      competencySummary: 'Sangat terampil dalam menyusun teks laporan hasil observasi dan teks eksposisi dengan kaidah kebahasaan baku.',
+    },
+    {
+      subjectCode: 'BIG-10',
+      teacherId: null,
+      formatif: 85,
+      sumatifMateri: 84,
+      pts: 82,
+      pas: 86,
+      finalScore: 84.3,
+      predicate: GradePredicate.B,
+      kktp: 75,
+      competencySummary: 'Mampu mengidentifikasi konteks percakapan deskriptif dan naratif serta aktif dalam interaksi interpersonal lisan.',
+    },
+  ];
+
+  for (const item of adityaGradesPlan) {
+    const sub = subjectsMap[item.subjectCode];
+    if (sub) {
+      await prisma.studentGrade.upsert({
+        where: {
+          studentId_subjectId_academicYearId_semester: {
+            studentId: studentAditya.id,
+            subjectId: sub.id,
+            academicYearId: ayActive.id,
+            semester: Semester.GANJIL,
+          },
+        },
+        create: {
+          studentId: studentAditya.id,
+          subjectId: sub.id,
+          classId: defaultClass.id,
+          academicYearId: ayActive.id,
+          semester: Semester.GANJIL,
+          teacherId: item.teacherId,
+          formatif: item.formatif,
+          sumatifMateri: item.sumatifMateri,
+          pts: item.pts,
+          pas: item.pas,
+          finalScore: item.finalScore,
+          predicate: item.predicate,
+          kktp: item.kktp,
+          isPassed: true,
+          competencySummary: item.competencySummary,
+        },
+        update: {
+          formatif: item.formatif,
+          sumatifMateri: item.sumatifMateri,
+          pts: item.pts,
+          pas: item.pas,
+          finalScore: item.finalScore,
+          predicate: item.predicate,
+          kktp: item.kktp,
+          isPassed: true,
+          competencySummary: item.competencySummary,
+        },
+      });
+    }
+  }
+
+  // Seed sample grades for other classmates in Fisika & Matematika
+  const classmates = studentsList.slice(1);
+  const sampleScores = [
+    { formatif: 78, sumatifMateri: 75, pts: 72, pas: 76, finalScore: 75.5, predicate: GradePredicate.B },
+    { formatif: 94, sumatifMateri: 92, pts: 90, pas: 95, finalScore: 92.8, predicate: GradePredicate.A },
+    { formatif: 82, sumatifMateri: 80, pts: 78, pas: 84, finalScore: 81.0, predicate: GradePredicate.B },
+    { formatif: 68, sumatifMateri: 65, pts: 60, pas: 70, finalScore: 65.9, predicate: GradePredicate.C },
+    { formatif: 85, sumatifMateri: 88, pts: 82, pas: 85, finalScore: 85.3, predicate: GradePredicate.B },
+    { formatif: 90, sumatifMateri: 91, pts: 89, pas: 92, finalScore: 90.5, predicate: GradePredicate.A },
+    { formatif: 74, sumatifMateri: 72, pts: 70, pas: 75, finalScore: 72.8, predicate: GradePredicate.C },
+    { formatif: 88, sumatifMateri: 86, pts: 84, pas: 89, finalScore: 86.8, predicate: GradePredicate.B },
+    { formatif: 80, sumatifMateri: 78, pts: 76, pas: 82, finalScore: 79.0, predicate: GradePredicate.B },
+  ];
+
+  for (let i = 0; i < classmates.length; i++) {
+    const student = classmates[i];
+    const scoreData = sampleScores[i % sampleScores.length];
+
+    // Fisika
+    await prisma.studentGrade.upsert({
+      where: {
+        studentId_subjectId_academicYearId_semester: {
+          studentId: student.id,
+          subjectId: subjectsMap['FIS-10'].id,
+          academicYearId: ayActive.id,
+          semester: Semester.GANJIL,
+        },
+      },
+      create: {
+        studentId: student.id,
+        subjectId: subjectsMap['FIS-10'].id,
+        classId: defaultClass.id,
+        academicYearId: ayActive.id,
+        semester: Semester.GANJIL,
+        teacherId: teacherSiti.id,
+        formatif: scoreData.formatif,
+        sumatifMateri: scoreData.sumatifMateri,
+        pts: scoreData.pts,
+        pas: scoreData.pas,
+        finalScore: scoreData.finalScore,
+        predicate: scoreData.predicate,
+        kktp: 75,
+        isPassed: scoreData.finalScore >= 75,
+        competencySummary:
+          scoreData.predicate === GradePredicate.A
+            ? 'Menunjukkan penguasaan sangat baik dalam konsep dasar fisika mekanika.'
+            : scoreData.predicate === GradePredicate.B
+            ? 'Menguasai konsep kinematika gerak dengan baik dan menyelesaikan tugas praktikum.'
+            : 'Cukup memahami teori gerak, perlu perbanyak latihan soal hitungan matematis fisika.',
+      },
+      update: {},
+    });
+
+    // Matematika Wajib
+    await prisma.studentGrade.upsert({
+      where: {
+        studentId_subjectId_academicYearId_semester: {
+          studentId: student.id,
+          subjectId: subjectsMap['MAT-10'].id,
+          academicYearId: ayActive.id,
+          semester: Semester.GANJIL,
+        },
+      },
+      create: {
+        studentId: student.id,
+        subjectId: subjectsMap['MAT-10'].id,
+        classId: defaultClass.id,
+        academicYearId: ayActive.id,
+        semester: Semester.GANJIL,
+        teacherId: teacherBambang.id,
+        formatif: scoreData.formatif + 2 > 100 ? 100 : scoreData.formatif + 2,
+        sumatifMateri: scoreData.sumatifMateri,
+        pts: scoreData.pts,
+        pas: scoreData.pas,
+        finalScore: scoreData.finalScore,
+        predicate: scoreData.predicate,
+        kktp: 75,
+        isPassed: scoreData.finalScore >= 75,
+        competencySummary: 'Memahami konsep persamaan dan pertidaksamaan linear dengan baik.',
+      },
+      update: {},
+    });
+  }
+  console.log('✅ Kurikulum Merdeka student grades seeded for Aditya & classmates.');
+
 
   // 11. Audit Log
   await prisma.auditLog.create({

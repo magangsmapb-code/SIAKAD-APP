@@ -236,3 +236,104 @@
   background: hsl(var(--muted-foreground) / 0.45);
 }
 
+/* Modern Glassmorphism & Micro-Interactions */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+.dark .glass-panel {
+  background: rgba(15, 23, 42, 0.72);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(51, 65, 85, 0.6);
+}
+
+.glass-card-hover {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.glass-card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.08), 0 4px 12px -2px rgba(0, 0, 0, 0.04);
+}
+.dark .glass-card-hover:hover {
+  box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.4), 0 4px 12px -2px rgba(0, 0, 0, 0.3);
+}
+
+.glow-primary {
+  box-shadow: 0 0 20px -3px rgba(37, 99, 235, 0.25);
+}
+.dark .glow-primary {
+  box-shadow: 0 0 24px -2px rgba(59, 130, 246, 0.3);
+}
+
+/* Laser Scan Animation for QR Camera Viewfinder */
+@keyframes scanner-laser {
+  0% {
+    top: 5%;
+    opacity: 0.9;
+  }
+  50% {
+    top: 90%;
+    opacity: 1;
+  }
+  100% {
+    top: 5%;
+    opacity: 0.9;
+  }
+}
+
+.animate-scan-laser {
+  position: absolute;
+  left: 5%;
+  right: 5%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #2563eb, #38bdf8, #2563eb, transparent);
+  box-shadow: 0 0 12px 3px rgba(37, 99, 235, 0.85);
+  animation: scanner-laser 2.2s ease-in-out infinite;
+}
+
+/* Official Printable Document Stylesheet */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 11pt !important;
+  }
+  .print\\:hidden, header, nav, aside, footer {
+    display: none !important;
+  }
+  .print\\:block {
+    display: block !important;
+  }
+  .print\\:m-0 {
+    margin: 0 !important;
+  }
+  .print\\:p-0 {
+    padding: 0 !important;
+  }
+  .print\\:shadow-none {
+    box-shadow: none !important;
+  }
+  .print\\:border-none {
+    border: none !important;
+  }
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    page-break-inside: auto;
+  }
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+  thead {
+    display: table-header-group;
+  }
+  tfoot {
+    display: table-footer-group;
+  }
+}
+
+

@@ -23,9 +23,11 @@ import { StatCard } from "@/components/shared/stat-card";
 import { useDemoRole } from "@/contexts/demo-role-context";
 import { toast } from "sonner";
 import { TeacherAttendanceCard } from "./teacher-attendance-card";
+import { AcademicPerformanceWidget } from "./academic-performance-widget";
 
 export function TeacherDashboardView() {
   const { currentUser } = useDemoRole();
+  const [activeTab, setActiveTab] = React.useState<"SCHEDULE_ATTENDANCE" | "GRADEBOOK">("SCHEDULE_ATTENDANCE");
   const [absenDone, setAbsenDone] = React.useState(false);
 
   const handleQuickAttendance = () => {
@@ -63,7 +65,44 @@ export function TeacherDashboardView() {
             </Button>
           </div>
         </div>
+
+        {/* Tab Switcher */}
+        <div className="flex items-center gap-2 mt-5 pt-4 border-t border-white/10 print:hidden">
+          <button
+            type="button"
+            onClick={() => setActiveTab("SCHEDULE_ATTENDANCE")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              activeTab === "SCHEDULE_ATTENDANCE"
+                ? "bg-white text-blue-900 shadow-sm"
+                : "text-blue-100 hover:bg-white/10"
+            }`}
+          >
+            <Clock className="h-3.5 w-3.5" />
+            <span>Jadwal Mengajar & Presensi</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("GRADEBOOK")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              activeTab === "GRADEBOOK"
+                ? "bg-white text-blue-900 shadow-sm"
+                : "text-blue-100 hover:bg-white/10"
+            }`}
+          >
+            <BookOpen className="h-3.5 w-3.5" />
+            <span>Buku Nilai & Rapor Kelas</span>
+          </button>
+        </div>
       </div>
+
+      {activeTab === "GRADEBOOK" ? (
+        <AcademicPerformanceWidget
+          studentName="Rekapitulasi Kelas XI MIPA 1"
+          nis="Wali: Budi Santoso, S.Pd."
+          className="XI MIPA 1"
+        />
+      ) : (
+        <>
 
       {/* Teacher Daily Attendance Card */}
       <TeacherAttendanceCard />
@@ -321,6 +360,8 @@ export function TeacherDashboardView() {
           </CardContent>
         </Card>
       </div>
+      </>
+      )}
     </div>
   );
 }

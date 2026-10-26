@@ -456,6 +456,7 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
           parentName: data.parentName || undefined,
           parentPhone: data.parentPhone || undefined,
           address: data.address || undefined,
+          rfidCardUid: data.rfidCardUid || undefined,
           status: data.status,
         });
 
@@ -520,6 +521,7 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
         if (data.parentName !== undefined) updatePayload.parentName = data.parentName;
         if (data.parentPhone !== undefined) updatePayload.parentPhone = data.parentPhone;
         if (data.address !== undefined) updatePayload.address = data.address;
+        if (data.rfidCardUid !== undefined) updatePayload.rfidCardUid = data.rfidCardUid;
         if (data.status) updatePayload.status = data.status;
 
         await apiClient.patch(`/students/${id}`, updatePayload);
@@ -1101,6 +1103,10 @@ export function SchoolDataProvider({ children }: { children: React.ReactNode }) 
           startTime: data.startTime,
           endTime: data.endTime,
           room: data.room,
+          token: data.token || undefined,
+          barcode: data.barcode || undefined,
+          radiusMeters: data.radiusMeters || 100,
+          enableGps: data.enableGps !== undefined ? data.enableGps : true,
           notes: noteWithToken || undefined,
         });
 

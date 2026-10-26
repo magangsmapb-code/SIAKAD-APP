@@ -144,11 +144,11 @@ export function PermissionFormModal({
           </div>
         </DialogHeader>
 
-        {/* Local Demo Disclaimer */}
-        <div className="text-[11px] bg-blue-50/70 dark:bg-blue-950/30 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-900 rounded-md p-2 flex items-start gap-1.5">
-          <Info className="h-3.5 w-3.5 mt-0.5 shrink-0 text-blue-600 dark:text-blue-400" />
+        {/* Live Backend Connection Indicator */}
+        <div className="text-[11px] bg-emerald-50/80 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900 rounded-md p-2 flex items-start gap-1.5">
+          <CheckCircle2 className="h-3.5 w-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
           <span>
-            <strong>Simulasi Frontend:</strong> Formulir dan unggahan file berfungsi penuh di sisi peramban untuk keperluan demonstrasi sebelum integrasi backend penyimpanan cloud.
+            <strong>Terhubung ke REST API SIAKAD:</strong> Pengajuan izin tersinkronisasi langsung ke sistem dan akan masuk ke antrean verifikasi wali kelas.
           </span>
         </div>
 

@@ -183,6 +183,142 @@ export function ReportGenerator() {
     URL.revokeObjectURL(url);
   };
 
+  // High-Fidelity Formatted Excel (.xls / XML Spreadsheet) Exporter
+  const handleExportExcel = () => {
+    let tableHtml = "";
+    if (reportType === "HARIAN") {
+      tableHtml = `
+        <table border="1" cellpadding="6" cellspacing="0" style="border-collapse: collapse; font-family: Calibri, Arial, sans-serif; font-size: 11pt;">
+          <thead>
+            <tr style="background-color: #1E3A8A; color: #FFFFFF; font-weight: bold; text-align: center;">
+              <th style="padding: 8px 12px;">No</th>
+              <th style="padding: 8px 12px;">Tanggal</th>
+              <th style="padding: 8px 16px;">Nama Siswa</th>
+              <th style="padding: 8px 14px;">NIS</th>
+              <th style="padding: 8px 14px;">Kelas</th>
+              <th style="padding: 8px 14px;">Status</th>
+              <th style="padding: 8px 12px;">Jam Masuk</th>
+              <th style="padding: 8px 14px;">Metode Presensi</th>
+              <th style="padding: 8px 16px;">Keterangan</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${reportDailyRecords
+              .map(
+                (r, idx) => `
+              <tr style="${idx % 2 === 1 ? 'background-color: #F8FAFC;' : 'background-color: #FFFFFF;'}">
+                <td style="text-align: center; border: 1px solid #CBD5E1;">${idx + 1}</td>
+                <td style="border: 1px solid #CBD5E1;">${r.date}</td>
+                <td style="font-weight: 600; border: 1px solid #CBD5E1;">${r.studentName}</td>
+                <td style="mso-number-format:'\\@'; border: 1px solid #CBD5E1;">${r.studentNis}</td>
+                <td style="border: 1px solid #CBD5E1;">${r.className}</td>
+                <td style="font-weight: bold; text-align: center; border: 1px solid #CBD5E1; color: ${
+                  r.status === 'HADIR' ? '#166534' : r.status === 'TERLAMBAT' ? '#92400E' : r.status === 'ALPA' ? '#991B1B' : '#075985'
+                };">${r.status}</td>
+                <td style="text-align: center; border: 1px solid #CBD5E1;">${r.checkInTime || "-"}</td>
+                <td style="border: 1px solid #CBD5E1;">${r.method}</td>
+                <td style="border: 1px solid #CBD5E1;">${r.notes || "-"}</td>
+              </tr>
+            `
+              )
+              .join("")}
+          </tbody>
+        </table>
+      `;
+    } else {
+      tableHtml = `
+        <table border="1" cellpadding="6" cellspacing="0" style="border-collapse: collapse; font-family: Calibri, Arial, sans-serif; font-size: 11pt;">
+          <thead>
+            <tr style="background-color: #1E3A8A; color: #FFFFFF; font-weight: bold; text-align: center;">
+              <th style="padding: 8px 10px;">No</th>
+              <th style="padding: 8px 14px;">NIS</th>
+              <th style="padding: 8px 16px;">Nama Siswa</th>
+              <th style="padding: 8px 12px;">Kelas</th>
+              <th style="padding: 8px 10px;">L/P</th>
+              <th style="padding: 8px 12px;">Total Sesi</th>
+              <th style="padding: 8px 12px;">Hadir</th>
+              <th style="padding: 8px 12px;">Terlambat</th>
+              <th style="padding: 8px 12px;">Sakit</th>
+              <th style="padding: 8px 12px;">Izin</th>
+              <th style="padding: 8px 12px;">Alpa</th>
+              <th style="padding: 8px 14px;">Persentase (%)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${reportStudentRecaps
+              .map(
+                (s, idx) => `
+              <tr style="${idx % 2 === 1 ? 'background-color: #F8FAFC;' : 'background-color: #FFFFFF;'}">
+                <td style="text-align: center; border: 1px solid #CBD5E1;">${idx + 1}</td>
+                <td style="mso-number-format:'\\@'; border: 1px solid #CBD5E1;">${s.studentNis}</td>
+                <td style="font-weight: 600; border: 1px solid #CBD5E1;">${s.studentName}</td>
+                <td style="border: 1px solid #CBD5E1;">${s.className}</td>
+                <td style="text-align: center; border: 1px solid #CBD5E1;">${s.gender}</td>
+                <td style="text-align: center; border: 1px solid #CBD5E1;">${s.totalSessions}</td>
+                <td style="text-align: center; color: #166534; font-weight: bold; border: 1px solid #CBD5E1;">${s.hadir}</td>
+                <td style="text-align: center; color: #92400E; border: 1px solid #CBD5E1;">${s.terlambat}</td>
+                <td style="text-align: center; color: #6B21A8; border: 1px solid #CBD5E1;">${s.sakit}</td>
+                <td style="text-align: center; color: #075985; border: 1px solid #CBD5E1;">${s.izin}</td>
+                <td style="text-align: center; color: #991B1B; font-weight: bold; border: 1px solid #CBD5E1;">${s.alpa}</td>
+                <td style="text-align: center; font-weight: bold; border: 1px solid #CBD5E1; ${
+                  s.attendanceRate >= 90 ? 'color: #166534;' : 'color: #991B1B;'
+                }">${s.attendanceRate.toFixed(1)}%</td>
+              </tr>
+            `
+              )
+              .join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    const excelTemplate = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+        <head>
+          <!--[if gte mso 9]>
+          <xml>
+            <x:ExcelWorkbook>
+              <x:ExcelWorksheets>
+                <x:ExcelWorksheet>
+                  <x:Name>Rekap Presensi</x:Name>
+                  <x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>
+                </x:ExcelWorksheet>
+              </x:ExcelWorksheets>
+            </x:ExcelWorkbook>
+          </xml>
+          <![endif]-->
+          <meta http-equiv="content-type" content="text/plain; charset=UTF-8"/>
+          <style>
+            body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; }
+            h2 { color: #1E3A8A; margin-bottom: 4px; }
+            p { color: #475569; margin-top: 0; font-size: 10pt; }
+          </style>
+        </head>
+        <body>
+          <h2>LAPORAN REKAPITULASI PRESENSI RESMI</h2>
+          <p>
+            <b>Sekolah:</b> ${INSTITUTION.name} (${INSTITUTION.location})<br/>
+            <b>Tahun Ajaran:</b> ${selectedAcademicYear} - Semester ${selectedSemester}<br/>
+            <b>Jenis Rekapitulasi:</b> ${reportType}<br/>
+            <b>Tanggal Diekspor:</b> ${new Date().toLocaleDateString("id-ID", { dateStyle: "full" })}
+          </p>
+          ${tableHtml}
+        </body>
+      </html>
+    `;
+
+    const blob = new Blob(["\uFEFF" + excelTemplate], { type: "application/vnd.ms-excel;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    const filename = `Laporan_Presensi_SMA_PB_Ngrayun_${reportType}_${selectedAcademicYear.replace("/", "-")}.xls`;
+    link.setAttribute("download", filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const handlePrint = () => {
     window.print();
   };
@@ -347,46 +483,30 @@ export function ReportGenerator() {
               <label className="text-xs font-semibold text-foreground">
                 Tindakan Ekspor & Cetak
               </label>
-              <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-2 flex-wrap pt-0.5">
                 <Button
                   className="text-xs gap-1.5 h-9 bg-emerald-700 hover:bg-emerald-800 text-white"
                   onClick={handleExportCSV}
                 >
                   <FileSpreadsheet className="h-4 w-4" />
-                  Ekspor CSV (Aktif)
+                  Ekspor CSV
+                </Button>
+
+                <Button
+                  className="text-xs gap-1.5 h-9 bg-emerald-600 hover:bg-emerald-700 text-white"
+                  onClick={handleExportExcel}
+                >
+                  <FileSpreadsheet className="h-4 w-4" />
+                  Ekspor Excel (.xls)
                 </Button>
 
                 <Button
                   variant="outline"
-                  className="text-xs gap-1.5 h-9"
+                  className="text-xs gap-1.5 h-9 border-primary/30 text-primary hover:bg-primary/10"
                   onClick={handlePrint}
                 >
                   <Printer className="h-4 w-4" />
-                  Cetak Dokumen Resmi
-                </Button>
-
-                <Button
-                  variant="outline"
-                  className="text-xs gap-1.5 h-9"
-                  onClick={() => {
-                    setInfoModalFormat("PDF");
-                    setInfoModalOpen(true);
-                  }}
-                >
-                  <Download className="h-4 w-4" />
-                  PDF (Pratinjau)
-                </Button>
-
-                <Button
-                  variant="outline"
-                  className="text-xs gap-1.5 h-9"
-                  onClick={() => {
-                    setInfoModalFormat("EXCEL");
-                    setInfoModalOpen(true);
-                  }}
-                >
-                  <Download className="h-4 w-4" />
-                  Excel XLSX
+                  Cetak / Simpan PDF
                 </Button>
               </div>
             </div>

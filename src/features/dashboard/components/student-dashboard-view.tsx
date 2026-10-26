@@ -20,9 +20,11 @@ import { StatCard } from "@/components/shared/stat-card";
 import { useDemoRole } from "@/contexts/demo-role-context";
 import { toast } from "sonner";
 import { StudentAttendanceCard } from "./student-attendance-card";
+import { AcademicPerformanceWidget } from "./academic-performance-widget";
 
 export function StudentDashboardView() {
   const { currentUser } = useDemoRole();
+  const [activeTab, setActiveTab] = React.useState<"ATTENDANCE" | "GRADES">("ATTENDANCE");
   const [newPermRequested, setNewPermRequested] = React.useState(false);
 
   const handleApplyPermission = () => {
@@ -60,10 +62,46 @@ export function StudentDashboardView() {
             </div>
           </div>
         </div>
+
+        {/* Navigation Tabs in Student Portal */}
+        <div className="flex items-center gap-2 mt-5 pt-4 border-t border-white/10 print:hidden">
+          <button
+            type="button"
+            onClick={() => setActiveTab("ATTENDANCE")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              activeTab === "ATTENDANCE"
+                ? "bg-white text-blue-900 shadow-sm"
+                : "text-blue-100 hover:bg-white/10"
+            }`}
+          >
+            <Clock className="h-3.5 w-3.5" />
+            <span>Presensi & Absensi Siswa</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("GRADES")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              activeTab === "GRADES"
+                ? "bg-white text-blue-900 shadow-sm"
+                : "text-blue-100 hover:bg-white/10"
+            }`}
+          >
+            <BookOpen className="h-3.5 w-3.5" />
+            <span>Buku Nilai & Rapor Belajar</span>
+          </button>
+        </div>
       </div>
 
-      {/* Live Interactive Anti-Cheat Attendance Card */}
-      <StudentAttendanceCard />
+      {activeTab === "GRADES" ? (
+        <AcademicPerformanceWidget
+          studentName={currentUser.name}
+          nis={currentUser.identifier}
+          className="X MIPA 1"
+        />
+      ) : (
+        <>
+          {/* Live Interactive Anti-Cheat Attendance Card */}
+          <StudentAttendanceCard />
 
       {/* Personal Attendance Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -304,6 +342,8 @@ export function StudentDashboardView() {
           </div>
         </CardContent>
       </Card>
+      </>
+      )}
     </div>
   );
 }

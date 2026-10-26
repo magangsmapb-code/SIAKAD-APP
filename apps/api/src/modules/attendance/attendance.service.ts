@@ -2236,4 +2236,78 @@ export class AttendanceService {
       orderBy: { lastUsedAt: 'desc' },
     });
   }
+
+  async getAllDevices(query: { page?: number; limit?: number; search?: string }) {
+    const page = Math.max(1, Number(query.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(query.limit) || 20));
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+    if (query.search) {
+      where.OR = [
+        { deviceId: { contains: query.search, mode: 'insensitive' } },
+        { deviceModel: { contains: query.search, mode: 'insensitive' } },
+        { user: { username: { contains: query.search, mode: 'insensitive' } } },
+      ];
+    }
+
+    const [total, data] = await Promise.all([
+      this.prisma.attendanceDevice.count({ where }),
+      this.prisma.attendanceDevice.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { lastUsedAt: 'desc' },
+        include: {
+          user: {
+            select: {
+              id: true,
+              username: true,
+              role: true,
+              teacher: { select: { fullName: true, nip: true } },
+              student: { select: { fullName: true, nis: true } },
+            },
+          },
+        },
+      }),
+    ]);
+
+    return {
+      data,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async deleteDevice(id: string, currentUser: any, ip?: string, userAgent?: string) {
+    const device = await this.prisma.attendanceDevice.findUnique({
+      where: { id },
+      include: { user: true },
+    });
+    if (!device) {
+      throw new NotFoundException('Perangkat tidak ditemukan');
+    }
+
+    await this.prisma.attendanceDevice.delete({
+      where: { id },
+    });
+
+    await this.auditService.record({
+      userId: currentUser.id,
+      actorName: currentUser.fullName || currentUser.username,
+      actorRole: currentUser.role,
+      action: 'ATTENDANCE_DEVICE_REMOVED',
+      entity: 'ATTENDANCE_DEVICE',
+      entityId: id,
+      oldValue: { deviceId: device.deviceId, userId: device.userId, username: device.user?.username },
+      ipAddress: ip,
+      userAgent,
+    });
+
+    return { success: true, message: 'Binding perangkat berhasil dihapus' };
+  }
 }

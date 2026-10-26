@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Body,
   Param,
   Query,
@@ -133,6 +134,38 @@ export class AttendanceController {
       message: 'Daftar perangkat pengguna berhasil dimuat',
       data: result,
     };
+  }
+
+  @Get('devices')
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.DEVELOPER)
+  @Permission('attendance.manage_settings')
+  @ApiOperation({ summary: 'Daftar seluruh perangkat terikat dalam sistem (Audit hardware presensi)' })
+  async getAllDevices(
+    @Query('page') page: number,
+    @Query('limit') limit: number,
+    @Query('search') search: string,
+  ) {
+    const result = await this.attendanceService.getAllDevices({ page, limit, search });
+    return {
+      message: 'Daftar seluruh perangkat terikat berhasil dimuat',
+      ...result,
+    };
+  }
+
+  @Delete('devices/:id')
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.DEVELOPER)
+  @Permission('attendance.manage_settings')
+  @ApiOperation({ summary: 'Lepas/Hapus tautan hardware device binding (Reset perangkat)' })
+  async deleteDevice(
+    @Param('id') id: string,
+    @CurrentUser() user: any,
+    @Req() req: Request,
+  ) {
+    const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
+    const userAgent = req.headers['user-agent'] || 'Unknown';
+
+    const result = await this.attendanceService.deleteDevice(id, user, ip, userAgent);
+    return result;
   }
 
   // ---------------------------------------------------------------------------

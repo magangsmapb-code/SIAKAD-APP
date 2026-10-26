@@ -132,6 +132,20 @@ enum Semester {
   GENAP
 }
 
+enum GradePredicate {
+  A
+  B
+  C
+  D
+}
+
+enum AssessmentType {
+  FORMATIF
+  SUMATIF_MATERI
+  PTS
+  PAS
+}
+
 // -----------------------------------------------------------------------------
 // 2. Identity and Access
 // -----------------------------------------------------------------------------
@@ -178,6 +192,7 @@ model Teacher {
   approvedPermissions PermissionRequest[]  @relation("ApprovedTeacher")
   schedules           Schedule[]
   attendances         TeacherAttendance[]
+  assignedGrades      StudentGrade[]       @relation("GradedByTeacher")
 
   @@map("teachers")
 }
@@ -204,6 +219,7 @@ model Student {
   enrollments        ClassEnrollment[]
   attendanceRecords  AttendanceRecord[]
   permissionRequests PermissionRequest[]
+  grades             StudentGrade[]
 
   @@index([classId])
   @@map("students")
@@ -247,6 +263,7 @@ model AcademicYear {
   classes             Class[]
   enrollments         ClassEnrollment[]
   teachingAssignments TeachingAssignment[]
+  grades              StudentGrade[]
 
   @@unique([name, semester])
   @@map("academic_years")
@@ -271,6 +288,7 @@ model Class {
   schedules           Schedule[]
   attendanceSessions  AttendanceSession[]
   permissionRequests  PermissionRequest[]
+  grades              StudentGrade[]
 
   @@unique([name, academicYearId])
   @@index([academicYearId])
@@ -308,6 +326,7 @@ model Subject {
   teachingAssignments TeachingAssignment[]
   schedules           Schedule[]
   attendanceSessions  AttendanceSession[]
+  grades              StudentGrade[]
 
   @@map("subjects")
 }
@@ -354,6 +373,42 @@ model Schedule {
   @@index([teacherId])
   @@index([dayOfWeek])
   @@map("schedules")
+}
+
+model StudentGrade {
+  id                String         @id @default(cuid())
+  studentId         String
+  student           Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subjectId         String
+  subject           Subject        @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  classId           String
+  schoolClass       Class          @relation(fields: [classId], references: [id], onDelete: Cascade)
+  academicYearId    String
+  academicYear      AcademicYear   @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  semester          Semester       @default(GANJIL)
+  teacherId         String?
+  teacher           Teacher?       @relation("GradedByTeacher", fields: [teacherId], references: [id], onDelete: SetNull)
+
+  formatif          Float          @default(0)
+  sumatifMateri     Float          @default(0)
+  pts               Float          @default(0)
+  pas               Float          @default(0)
+  finalScore        Float          @default(0)
+  predicate         GradePredicate @default(B)
+  kktp              Float          @default(75)
+  isPassed          Boolean        @default(true)
+  competencySummary String?        @db.Text
+
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  @@unique([studentId, subjectId, academicYearId, semester])
+  @@index([studentId])
+  @@index([classId])
+  @@index([subjectId])
+  @@index([academicYearId])
+  @@index([teacherId])
+  @@map("student_grades")
 }
 
 model SchoolSetting {
