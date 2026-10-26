@@ -190,6 +190,7 @@ export class StudentsService {
           parentName: createDto.parentName,
           parentPhone: createDto.parentPhone,
           address: createDto.address,
+          rfidCardUid: createDto.rfidCardUid || undefined,
           status: createDto.status || 'AKTIF',
         },
         include: {
@@ -242,9 +243,11 @@ export class StudentsService {
       if (duplicateNisn) throw new ConflictException(`NISN '${updateDto.nisn}' sudah digunakan`);
     }
 
+    const { academicYear, ...studentData } = updateDto;
+
     const updated = await this.prisma.student.update({
       where: { id },
-      data: updateDto,
+      data: studentData,
       include: { currentClass: true },
     });
 

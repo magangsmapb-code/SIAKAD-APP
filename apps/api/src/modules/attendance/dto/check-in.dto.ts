@@ -56,4 +56,20 @@ export class CheckInDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @ApiPropertyOptional({ example: 'E280116060000204', description: 'UID Kartu RFID fisik siswa/guru' })
+  @IsOptional()
+  @IsString()
+  rfidCardUid?: string;
+
+  @ApiPropertyOptional({ example: '749201', description: 'Token sesi 6-digit dinamis' })
+  @IsOptional()
+  @IsString()
+  token?: string;
+
+  @ApiPropertyOptional({ example: 'BC-2026-X-MIPA1', description: 'Barcode sesi kelas' })
+  @IsOptional()
+  @IsString()
+  barcode?: string;
 }
+

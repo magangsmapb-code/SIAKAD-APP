@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { TeacherStatus } from '@prisma/client';
+import { Transform } from 'class-transformer';
 import { IsBoolean, IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateTeacherDto {
@@ -25,6 +26,7 @@ export class CreateTeacherDto {
 
   @ApiPropertyOptional({ example: 'hendro.wibowo@smapemberdayaanbangsa.sch.id' })
   @IsOptional()
+  @Transform(({ value }) => (value === '' ? undefined : value))
   @IsEmail({}, { message: 'Format email tidak valid' })
   email?: string;
 
@@ -47,4 +49,18 @@ export class CreateTeacherDto {
   @IsOptional()
   @IsEnum(TeacherStatus)
   status?: TeacherStatus;
+
+  @ApiPropertyOptional({ description: 'Peran tampilan guru di frontend (GURU_MAPEL / WALI_KELAS)' })
+  @IsOptional()
+  role?: string;
+
+  @ApiPropertyOptional({ description: 'Daftar nama mata pelajaran yang diampu' })
+  @IsOptional()
+  subjects?: string[];
+
+  @ApiPropertyOptional({ description: 'Kelas yang diampu jika wali kelas' })
+  @IsOptional()
+  @IsString()
+  assignedClass?: string;
 }
+

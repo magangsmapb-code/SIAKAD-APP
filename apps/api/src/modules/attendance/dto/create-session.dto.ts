@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { SessionStatus } from '@prisma/client';
 import { Transform } from 'class-transformer';
-import { IsDateString, IsEnum, IsNotEmpty, IsOptional, IsString, Matches } from 'class-validator';
+import { IsBoolean, IsDateString, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, Matches } from 'class-validator';
 
 export class CreateSessionDto {
   @ApiProperty({ description: 'ID Kelas' })
@@ -13,6 +13,11 @@ export class CreateSessionDto {
   @IsNotEmpty({ message: 'Mata pelajaran wajib dipilih' })
   @IsString()
   subjectId: string;
+
+  @ApiPropertyOptional({ description: 'ID Guru Pengampu (otomatis terisi atau dipilih admin)' })
+  @IsOptional()
+  @IsString()
+  teacherId?: string;
 
   @ApiPropertyOptional({ description: 'ID Jadwal Pelajaran jika terjadwal' })
   @IsOptional()
@@ -49,4 +54,25 @@ export class CreateSessionDto {
   @Transform(({ value }) => (value === 'SELESAI' ? SessionStatus.DITUTUP : value))
   @IsEnum(SessionStatus)
   status?: SessionStatus;
+
+  @ApiPropertyOptional({ example: '749201', description: 'Token sesi 6-digit dinamis' })
+  @IsOptional()
+  @IsString()
+  token?: string;
+
+  @ApiPropertyOptional({ example: 'BC-2026-X-MIPA1', description: 'Barcode sesi kelas' })
+  @IsOptional()
+  @IsString()
+  barcode?: string;
+
+  @ApiPropertyOptional({ example: 100, description: 'Radius batas geofence dalam meter' })
+  @IsOptional()
+  @IsInt()
+  radiusMeters?: number;
+
+  @ApiPropertyOptional({ example: true, description: 'Apakah GPS diaktifkan untuk sesi ini' })
+  @IsOptional()
+  @IsBoolean()
+  enableGps?: boolean;
 }
+

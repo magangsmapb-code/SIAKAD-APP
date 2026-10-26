@@ -1,12 +1,30 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsNotEmpty, IsString } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { AttendanceStatus } from '@prisma/client';
 
 export class CreateCorrectionRequestDto {
-  @ApiProperty({ description: 'ID catatan absensi yang ingin dikoreksi' })
-  @IsNotEmpty()
+  @ApiPropertyOptional({ description: 'ID catatan absensi yang ingin dikoreksi' })
+  @IsOptional()
   @IsString()
-  recordId: string;
+  recordId?: string;
+
+  @ApiPropertyOptional({ description: 'ID sesi absensi' })
+  @IsOptional()
+  @IsString()
+  sessionId?: string;
+
+  @ApiPropertyOptional({ description: 'ID siswa yang mengajukan koreksi' })
+  @IsOptional()
+  @IsString()
+  studentId?: string;
+
+  @ApiPropertyOptional({
+    enum: AttendanceStatus,
+    description: 'Status kehadiran sebelumnya',
+  })
+  @IsOptional()
+  @IsEnum(AttendanceStatus)
+  previousStatus?: AttendanceStatus;
 
   @ApiProperty({
     enum: AttendanceStatus,
@@ -23,4 +41,10 @@ export class CreateCorrectionRequestDto {
   @IsNotEmpty()
   @IsString()
   reason: string;
+
+  @ApiPropertyOptional({ description: 'URL lampiran bukti pendukung jika ada' })
+  @IsOptional()
+  @IsString()
+  proofAttachmentUrl?: string;
 }
+

@@ -231,6 +231,21 @@ export class UsersService {
       data.refreshToken = null;
     }
 
+    if (dto.fullName || dto.phone) {
+      const profileData: any = {};
+      if (dto.fullName) profileData.fullName = dto.fullName;
+      if (dto.phone) profileData.phone = dto.phone;
+
+      await this.prisma.teacher.updateMany({
+        where: { userId: id },
+        data: profileData,
+      });
+      await this.prisma.student.updateMany({
+        where: { userId: id },
+        data: profileData,
+      });
+    }
+
     const updated = await this.prisma.user.update({
       where: { id },
       data,

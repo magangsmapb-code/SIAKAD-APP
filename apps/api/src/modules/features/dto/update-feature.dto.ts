@@ -1,4 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import { IsBoolean, IsEnum, IsOptional, IsString } from 'class-validator';
 import { FeatureMaintenanceStatus } from '@prisma/client';
 
@@ -15,6 +16,7 @@ export class UpdateFeatureDto {
 
   @ApiPropertyOptional({ example: 'Sistem sedang dalam sinkronisasi berkala', description: 'Pesan pemeliharaan' })
   @IsOptional()
+  @Transform(({ value }) => (value === null ? undefined : value))
   @IsString()
   maintenanceMessage?: string;
 
@@ -23,3 +25,4 @@ export class UpdateFeatureDto {
   @IsString()
   changeNotes?: string;
 }
+

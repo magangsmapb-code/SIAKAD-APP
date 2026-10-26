@@ -82,8 +82,9 @@ export class PermissionsService {
         where: { id: studentId },
       });
       if (!student) throw new NotFoundException('Siswa tidak ditemukan');
-      classId = student.classId;
+      classId = createDto.classId || student.classId;
     }
+
 
     const start = new Date(createDto.startDate);
     const end = new Date(createDto.endDate);

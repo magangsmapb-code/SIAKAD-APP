@@ -21,6 +21,12 @@ export class CreateClassDto {
   @IsString()
   roomNumber?: string;
 
+  @ApiPropertyOptional({ example: 'R. 104', description: 'Alias nomor ruangan kelas' })
+  @IsOptional()
+  @IsString()
+  room?: string;
+
+
   @ApiProperty({ description: 'ID Tahun Ajaran' })
   @IsNotEmpty({ message: 'Tahun ajaran wajib dipilih' })
   @IsString()

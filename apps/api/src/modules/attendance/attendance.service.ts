@@ -1156,7 +1156,11 @@ export class AttendanceService {
   // ---------------------------------------------------------------------------
 
   async createSession(createDto: CreateSessionDto, currentUser: any, ip?: string, userAgent?: string) {
-    let teacherId = currentUser.teacherId;
+    let teacherId = createDto.teacherId || currentUser.teacherId;
+
+    if (!teacherId) {
+      teacherId = await this.resolveTeacherId(currentUser).catch(() => null);
+    }
 
     if (currentUser.role === Role.ADMIN || currentUser.role === Role.SUPER_ADMIN || currentUser.role === Role.DEVELOPER) {
       if (!teacherId) {
@@ -1167,6 +1171,10 @@ export class AttendanceService {
           },
         });
         teacherId = assignment?.teacherId;
+      }
+      if (!teacherId) {
+        const schoolClass = await this.prisma.class.findUnique({ where: { id: createDto.classId } });
+        teacherId = schoolClass?.homeroomTeacherId;
       }
     }
 
@@ -1378,12 +1386,26 @@ export class AttendanceService {
       }
     }
 
+    const updateData: any = {};
+    if (dto.classId) updateData.classId = dto.classId;
+    if (dto.subjectId) updateData.subjectId = dto.subjectId;
+    if (dto.teacherId) updateData.teacherId = dto.teacherId;
+    if (dto.scheduleId !== undefined) updateData.scheduleId = dto.scheduleId;
+    if (dto.date) {
+      const d = new Date(dto.date);
+      d.setHours(0, 0, 0, 0);
+      updateData.date = d;
+    }
+    if (dto.startTime) updateData.startTime = dto.startTime;
+    if (dto.endTime) updateData.endTime = dto.endTime;
+    if (dto.room !== undefined) updateData.room = dto.room;
+    if (dto.notes !== undefined) updateData.notes = dto.notes;
+    if (dto.status) updateData.status = dto.status;
+    updateData.updatedAt = new Date();
+
     const updated = await this.prisma.attendanceSession.update({
       where: { id },
-      data: {
-        ...dto,
-        updatedAt: new Date(),
-      },
+      data: updateData,
     });
 
     await this.auditService.record({
@@ -1652,13 +1674,79 @@ export class AttendanceService {
   // ---------------------------------------------------------------------------
 
   async createCorrection(dto: CreateCorrectionRequestDto, currentUser: any, ip?: string, userAgent?: string) {
-    const record = await this.prisma.attendanceRecord.findUnique({
-      where: { id: dto.recordId },
-      include: {
-        session: { include: { schoolClass: true } },
-        student: true,
-      },
-    });
+    let record: any = null;
+    if (dto.recordId && dto.recordId !== 'record-today') {
+      record = await this.prisma.attendanceRecord.findUnique({
+        where: { id: dto.recordId },
+        include: {
+          session: { include: { schoolClass: true } },
+          student: true,
+        },
+      });
+    }
+
+    if (!record) {
+      let studentId: string | null = null;
+      if (currentUser.role === Role.STUDENT) {
+        studentId = await this.resolveStudentId(currentUser);
+      } else if (dto.studentId && dto.studentId !== 'std-current') {
+        studentId = dto.studentId;
+      }
+
+      if (studentId) {
+        let session: any = null;
+        if (dto.sessionId && dto.sessionId !== 'session-active') {
+          session = await this.prisma.attendanceSession.findUnique({
+            where: { id: dto.sessionId },
+            include: { schoolClass: true },
+          });
+        }
+
+        if (!session) {
+          const student = await this.prisma.student.findUnique({ where: { id: studentId } });
+          if (student?.classId) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            session = await this.prisma.attendanceSession.findFirst({
+              where: { classId: student.classId, date: today },
+              include: { schoolClass: true },
+              orderBy: { createdAt: 'desc' },
+            });
+          }
+        }
+
+        if (session) {
+          record = await this.prisma.attendanceRecord.findUnique({
+            where: {
+              sessionId_studentId: {
+                sessionId: session.id,
+                studentId,
+              },
+            },
+            include: {
+              session: { include: { schoolClass: true } },
+              student: true,
+            },
+          });
+
+          if (!record) {
+            record = await this.prisma.attendanceRecord.create({
+              data: {
+                sessionId: session.id,
+                studentId,
+                status: dto.previousStatus || AttendanceStatus.ALPA,
+                method: AttendanceMethod.MANUAL_TEACHER,
+                notes: 'Dibuat otomatis dari pengajuan koreksi presensi',
+              },
+              include: {
+                session: { include: { schoolClass: true } },
+                student: true,
+              },
+            });
+          }
+        }
+      }
+    }
 
     if (!record) throw new NotFoundException('Catatan absensi tidak ditemukan');
 

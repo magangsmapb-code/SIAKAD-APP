@@ -197,9 +197,11 @@ export class TeachersService {
       if (duplicateNip) throw new ConflictException(`NIP '${updateDto.nip}' sudah digunakan`);
     }
 
+    const { role, subjects, assignedClass, ...teacherData } = updateDto as any;
+
     const updated = await this.prisma.teacher.update({
       where: { id },
-      data: updateDto,
+      data: teacherData,
     });
 
     await this.auditService.record({

@@ -8,6 +8,12 @@ export class CreatePermissionDto {
   @IsString()
   studentId?: string;
 
+  @ApiPropertyOptional({ description: 'ID Kelas siswa' })
+  @IsOptional()
+  @IsString()
+  classId?: string;
+
+
   @ApiProperty({ enum: PermissionType, example: PermissionType.SAKIT, description: 'Jenis permohonan izin (SAKIT, IZIN, DISPENSASI)' })
   @IsNotEmpty({ message: 'Tipe izin wajib dipilih' })
   @IsEnum(PermissionType)

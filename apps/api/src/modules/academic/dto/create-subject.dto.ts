@@ -23,6 +23,12 @@ export class CreateSubjectDto {
   @Min(1)
   creditHours?: number;
 
+  @ApiPropertyOptional({ example: 2, description: 'Alias jam pelajaran per minggu' })
+  @IsOptional()
+  @IsInt()
+  hoursPerWeek?: number;
+
+
   @ApiPropertyOptional({ default: true })
   @IsOptional()
   @IsBoolean()

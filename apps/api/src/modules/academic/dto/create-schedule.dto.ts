@@ -18,9 +18,16 @@ export class CreateScheduleDto {
   @IsString()
   teacherId: string;
 
-  @ApiProperty({ enum: DayOfWeek, example: DayOfWeek.SENIN })
+  @ApiPropertyOptional({ enum: DayOfWeek, example: DayOfWeek.SENIN })
+  @IsOptional()
   @IsEnum(DayOfWeek)
-  dayOfWeek: DayOfWeek;
+  dayOfWeek?: DayOfWeek;
+
+  @ApiPropertyOptional({ enum: DayOfWeek, example: DayOfWeek.SENIN, description: 'Alias hari jadwal pelajaran' })
+  @IsOptional()
+  @IsEnum(DayOfWeek)
+  day?: DayOfWeek;
+
 
   @ApiProperty({ example: '07:30', description: 'Waktu mulai format HH:MM' })
   @IsNotEmpty()

@@ -51,4 +51,15 @@ export class CreateStudentDto {
   @IsOptional()
   @IsEnum(StudentStatus)
   status?: StudentStatus;
+
+  @ApiPropertyOptional({ example: 'E280116060000204', description: 'UID Kartu RFID fisik siswa' })
+  @IsOptional()
+  @IsString()
+  rfidCardUid?: string;
+
+  @ApiPropertyOptional({ example: '2026/2027', description: 'Tahun ajaran masuk' })
+  @IsOptional()
+  @IsString()
+  academicYear?: string;
 }
+

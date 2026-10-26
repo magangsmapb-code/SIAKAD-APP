@@ -192,8 +192,12 @@ export class AcademicService {
       throw new ConflictException(`Kelas '${dto.name}' sudah ada pada tahun ajaran tersebut`);
     }
 
+    const { room, ...classPayload } = dto as any;
+    const roomNumber = classPayload.roomNumber || room;
+    const classData = { ...classPayload, roomNumber };
+
     const created = await this.prisma.class.create({
-      data: dto,
+      data: classData,
       include: { homeroomTeacher: true, academicYear: true },
     });
 
@@ -214,9 +218,15 @@ export class AcademicService {
     const existing = await this.prisma.class.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException('Kelas tidak ditemukan');
 
+    const { room, ...classPayload } = dto as any;
+    const updateData: any = { ...classPayload };
+    if (classPayload.roomNumber || room) {
+      updateData.roomNumber = classPayload.roomNumber || room;
+    }
+
     const updated = await this.prisma.class.update({
       where: { id },
-      data: dto,
+      data: updateData,
       include: { homeroomTeacher: true, academicYear: true },
     });
 
@@ -278,8 +288,12 @@ export class AcademicService {
       throw new ConflictException(`Mata pelajaran dengan kode '${dto.code}' sudah terdaftar`);
     }
 
+    const { hoursPerWeek, ...subjectPayload } = dto as any;
+    const creditHours = subjectPayload.creditHours ?? hoursPerWeek ?? 2;
+    const subjectData = { ...subjectPayload, creditHours };
+
     const created = await this.prisma.subject.create({
-      data: dto,
+      data: subjectData,
     });
 
     await this.auditService.record({
@@ -304,9 +318,15 @@ export class AcademicService {
       if (duplicate) throw new ConflictException(`Kode mapel '${dto.code}' sudah digunakan`);
     }
 
+    const { hoursPerWeek, ...subjectPayload } = dto as any;
+    const updateData: any = { ...subjectPayload };
+    if (subjectPayload.creditHours !== undefined || hoursPerWeek !== undefined) {
+      updateData.creditHours = subjectPayload.creditHours ?? hoursPerWeek;
+    }
+
     const updated = await this.prisma.subject.update({
       where: { id },
-      data: dto,
+      data: updateData,
     });
 
     await this.auditService.record({
@@ -366,18 +386,25 @@ export class AcademicService {
   }
 
   async createSchedule(dto: CreateScheduleDto, currentUser: any) {
+    const { day, ...schedulePayload } = dto as any;
+    const dayOfWeek = schedulePayload.dayOfWeek || day;
+    if (!dayOfWeek) {
+      throw new BadRequestException('Hari jadwal pelajaran wajib ditentukan');
+    }
+    const scheduleData = { ...schedulePayload, dayOfWeek };
+
     // Check time conflicts for teacher or class on the same day
     const teacherConflict = await this.prisma.schedule.findFirst({
       where: {
-        teacherId: dto.teacherId,
-        dayOfWeek: dto.dayOfWeek,
+        teacherId: scheduleData.teacherId,
+        dayOfWeek: scheduleData.dayOfWeek,
         isActive: true,
         OR: [
           {
-            AND: [{ startTime: { lte: dto.startTime } }, { endTime: { gt: dto.startTime } }],
+            AND: [{ startTime: { lte: scheduleData.startTime } }, { endTime: { gt: scheduleData.startTime } }],
           },
           {
-            AND: [{ startTime: { lt: dto.endTime } }, { endTime: { gte: dto.endTime } }],
+            AND: [{ startTime: { lt: scheduleData.endTime } }, { endTime: { gte: scheduleData.endTime } }],
           },
         ],
       },
@@ -391,7 +418,7 @@ export class AcademicService {
     }
 
     const created = await this.prisma.schedule.create({
-      data: dto,
+      data: scheduleData,
       include: {
         schoolClass: true,
         subject: true,
@@ -411,9 +438,9 @@ export class AcademicService {
       entity: 'SCHEDULE',
       entityId: created.id,
       newValue: {
-        class: schoolClass?.name || dto.classId,
-        subject: subject?.name || dto.subjectId,
-        teacher: teacher?.fullName || dto.teacherId,
+        class: schoolClass?.name || scheduleData.classId,
+        subject: subject?.name || scheduleData.subjectId,
+        teacher: teacher?.fullName || scheduleData.teacherId,
         day: created.dayOfWeek,
         time: `${created.startTime}-${created.endTime}`,
       },
@@ -426,9 +453,15 @@ export class AcademicService {
     const existing = await this.prisma.schedule.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException('Jadwal pelajaran tidak ditemukan');
 
+    const { day, ...schedulePayload } = dto as any;
+    const updateData: any = { ...schedulePayload };
+    if (schedulePayload.dayOfWeek || day) {
+      updateData.dayOfWeek = schedulePayload.dayOfWeek || day;
+    }
+
     const updated = await this.prisma.schedule.update({
       where: { id },
-      data: dto,
+      data: updateData,
       include: {
         schoolClass: { select: { id: true, name: true, level: true, roomNumber: true } },
         subject: { select: { id: true, code: true, name: true } },
